@@ -30,11 +30,6 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		E10178322F02844400D318B0 /* WearWeather */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = WearWeather;
-			sourceTree = "<group>";
-		};
 		E10178402F02844600D318B0 /* WearWeatherTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = WearWeatherTests;
@@ -43,6 +38,11 @@
 		E101784A2F02844600D318B0 /* WearWeatherUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = WearWeatherUITests;
+			sourceTree = "<group>";
+		};
+		E19960E62F028ADD001DBC44 /* WearWeather */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = WearWeather;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -75,10 +75,10 @@
 		E10178272F02844400D318B0 = {
 			isa = PBXGroup;
 			children = (
-				E10178322F02844400D318B0 /* WearWeather */,
 				E10178402F02844600D318B0 /* WearWeatherTests */,
 				E101784A2F02844600D318B0 /* WearWeatherUITests */,
 				E10178312F02844400D318B0 /* Products */,
+				E19960E62F028ADD001DBC44 /* WearWeather */,
 			);
 			sourceTree = "<group>";
 		};
@@ -108,7 +108,7 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				E10178322F02844400D318B0 /* WearWeather */,
+				E19960E62F028ADD001DBC44 /* WearWeather */,
 			);
 			name = WearWeather;
 			packageProductDependencies = (
@@ -397,6 +397,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "날씨 추천을 위해 위치 정보가 필요합니다";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -428,6 +429,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "날씨 추천을 위해 위치 정보가 필요합니다";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
