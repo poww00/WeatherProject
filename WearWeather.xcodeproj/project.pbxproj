@@ -187,11 +187,12 @@
 				};
 			};
 			buildConfigurationList = E101782B2F02844400D318B0 /* Build configuration list for PBXProject "WearWeather" */;
-			developmentRegion = en;
+			developmentRegion = ko;
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
 				Base,
+				ko,
 			);
 			mainGroup = E10178272F02844400D318B0;
 			minimizedProjectReferenceProxies = 1;

@@ -1,18 +1,20 @@
-// Shared/Models/WeatherModel.swift
 import Foundation
 
-struct WeatherModel: Codable {
-
-    enum WeatherCondition: String, Codable {
-        case clear, cloudy, rain, snow, storm
-    }
-    
+struct WeatherModel: Codable, Equatable {
     let temperature: Double
-    let condition: WeatherCondition // 이제 내부의 WeatherCondition을 가리킴
+    let condition: WeatherCondition
     let highTemperature: Double
     let lowTemperature: Double
-    
+
+    enum WeatherCondition: String, Codable, Equatable {
+        case clear
+        case cloudy
+        case rain
+        case snow
+        case storm
+    }
+
     var tempString: String {
-        return String(format: "%.0f°", temperature)
+        "\(Int(temperature))°"
     }
 }
