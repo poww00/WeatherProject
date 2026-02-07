@@ -7,8 +7,7 @@ struct MainView: View {
     var body: some View {
         ZStack {
             // 1. 배경
-            Color(red: 0.4, green: 0.7, blue: 1.0)
-                .ignoresSafeArea()
+            AppBackgroundView(condition: vm.weather?.condition)
 
             VStack(spacing: 16) {
 
@@ -118,16 +117,16 @@ struct MainView: View {
 
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 12) {
-                            ForEach(0..<8, id: \.self) { i in
+                            ForEach(vm.hourly) { item in
                                 VStack(spacing: 8) {
-                                    Text("\(i + 1)시")
+                                    Text(item.hourText)
                                         .font(.subheadline)
                                         .foregroundColor(.gray)
 
-                                    Image(systemName: "cloud.sun.fill")
+                                    Image(systemName: symbolName(for: item.condition))
                                         .font(.title2)
 
-                                    Text("\(22 + i)°")
+                                    Text("\(item.temperature)°")
                                         .font(.headline)
                                 }
                                 .padding()
@@ -162,6 +161,15 @@ struct MainView: View {
         if let acc = outfit.accessory { tags.append("악세서리: \(acc)") }
         if outfit.hasMask { tags.append("마스크") }
         return tags
+    }
+    private func symbolName(for c: WeatherModel.WeatherCondition) -> String {
+        switch c {
+        case .clear: return "sun.max.fill"
+        case .cloudy: return "cloud.fill"
+        case .rain: return "cloud.rain.fill"
+        case .snow: return "snowflake"
+        case .storm: return "cloud.bolt.rain.fill"
+        }
     }
 }
 
