@@ -1,72 +1,82 @@
-// Domain/Stylist.swift
 import Foundation
 
-class Stylist {
-    // 누구나 부를 수 있게 공유 (Singleton)
+final class Stylist {
     static let shared = Stylist()
-    
     private init() {}
-    
-    // 🧠 옷 추천해주는 함수
-    // 입력: 온도, 날씨상태, 공기나쁨여부 -> 출력: ClothingModel(코디)
-    func recommendOutfit(temp: Double, condition: WeatherModel.WeatherCondition, isBadAir: Bool) -> ClothingModel {
-        
-        var outfit = ClothingModel.default
-        
-        // 1. 기온별 기본 옷차림 (한국인 국룰 코디표 반영)
+
+    /// temp: 섭씨 기준
+    func recommendOutfit(
+        temp: Double,
+        condition: WeatherModel.WeatherCondition,
+        isBadAir: Bool
+    ) -> ClothingModel {
+
+        // 기본값
+        var top = "tshirt_basic"
+        var bottom = "shorts_basic"
+        var outer: String? = nil
+        var accessory: String? = nil
+        var hasMask = false
+
+        // 1) 특수 상황(비/눈/폭풍) 우선 처리
+        switch condition {
+        case .rain:
+            accessory = "umbrella"
+            // 비 오면 얇은 아우터 추천(예시)
+            if temp < 18 { outer = "light_jacket" }
+        case .snow:
+            accessory = "gloves"
+            if temp < 5 { outer = "padding" }
+        case .storm:
+            accessory = "umbrella"
+            if temp < 10 { outer = "padding" }
+        default:
+            break
+        }
+
+        // 2) 온도 구간별 “국룰” 추천
+        // (너가 나중에 룰표로 바꿔도 이 구조가 제일 편함)
         switch temp {
-        case 28...: // 28도 이상 (한여름)
-            outfit.top = "sleeveless"
-            outfit.bottom = "shorts_short"
-            outfit.accessory = "handfan" // 손풍기
-            
-        case 23..<28: // 23~27도 (초여름)
-            outfit.top = "tshirt_short"
-            outfit.bottom = "pants_cotton"
-            
-        case 20..<23: // 20~22도 (초가을/늦봄)
-            outfit.top = "tshirt_long"
-            outfit.bottom = "pants_denim"
-            
-        case 17..<20: // 17~19도 (가을)
-            outfit.top = "hoodie"
-            outfit.bottom = "slacks"
-            
-        case 12..<17: // 12~16도 (쌀쌀)
-            outfit.top = "shirt"
-            outfit.bottom = "pants_denim"
-            outfit.outer = "cardigan" // 가디건 추가
-            
-        case 9..<12: // 9~11도 (늦가을)
-            outfit.top = "knit"
-            outfit.bottom = "pants_warm"
-            outfit.outer = "trench_coat" // 트렌치코트
-            
-        case 5..<9: // 5~8도 (초겨울)
-            outfit.top = "heattech"
-            outfit.bottom = "pants_thick"
-            outfit.outer = "coat_wool" // 코트
-            
-        default: // 4도 이하 (한파)
-            outfit.top = "sweatshirt"
-            outfit.bottom = "pants_padding"
-            outfit.outer = "long_padding" // 롱패딩
-            outfit.accessory = "muffler" // 목도리
+        case ..<5:
+            top = "heattech"
+            bottom = "pants_thick"
+            outer = outer ?? "padding"
+            accessory = accessory ?? "muffler"
+        case 5..<10:
+            top = "knit"
+            bottom = "pants_basic"
+            outer = outer ?? "coat"
+        case 10..<15:
+            top = "longsleeve"
+            bottom = "pants_basic"
+            outer = outer ?? "jacket"
+        case 15..<20:
+            top = "longsleeve"
+            bottom = "pants_basic"
+            outer = outer ?? "cardigan"
+        case 20..<24:
+            top = "tshirt_basic"
+            bottom = "pants_light"
+        case 24..<28:
+            top = "tshirt_basic"
+            bottom = "shorts_basic"
+        default: // 28 이상
+            top = "sleeveless"
+            bottom = "shorts_basic"
+            accessory = accessory ?? "cap"
         }
-        
-        // 2. 날씨 특수 상황 (비/눈) - 기온보다 우선순위 높음
-        if condition == .rain {
-            outfit.outer = "raincoat" // 우비
-            outfit.accessory = "umbrella" // 우산
-        } else if condition == .snow {
-            outfit.accessory = "gloves" // 장갑
-        }
-        
-        // 3. 미세먼지 체크 (마스크 착용)
+
+        // 3) 미세먼지
         if isBadAir {
-            outfit.hasMask = true
+            hasMask = true
         }
-        
-        return outfit
+
+        return ClothingModel(
+            top: top,
+            bottom: bottom,
+            outer: outer,
+            accessory: accessory,
+            hasMask: hasMask
+        )
     }
 }
