@@ -1,39 +1,23 @@
 import SwiftUI
 
 struct LightningFlashView: View {
-    @State private var flashOpacity: Double = 0.0
+    var intensity: Double = 0.55
 
     var body: some View {
-        Color.white
-            .opacity(flashOpacity)
-            .ignoresSafeArea()
-            .allowsHitTesting(false)
-            .onAppear {
-                scheduleNextFlash()
-            }
-    }
+        TimelineView(.animation) { timeline in
+            let t = timeline.date.timeIntervalSinceReferenceDate
 
-    private func scheduleNextFlash() {
-        // 2~7초 랜덤 간격으로 번개
-        let delay = Double.random(in: 2.0...7.0)
-        DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-            Task { @MainActor in
-                await flash()
-                scheduleNextFlash()
-            }
-        }
-    }
+            // 0~1 사이에서 주기적으로 번쩍(대충 4~7초 사이 느낌)
+            // 여러 사인파를 섞어서 랜덤 같은 패턴 만듦
+            let a = abs(sin(t * 0.9))
+            let b = abs(sin(t * 1.7 + 1.2))
+            let c = abs(sin(t * 2.3 + 2.6))
+            let spike = max(0, (a * b * c - 0.78) * 4.5) // 임계치 넘을 때만
 
-    @MainActor
-    private func flash() async {
-        // 짧게 1~2번 번쩍
-        let times = Int.random(in: 1...2)
-        for _ in 0..<times {
-            withAnimation(.easeOut(duration: 0.08)) { flashOpacity = 0.55 }
-            try? await Task.sleep(nanoseconds: 80_000_000)
-            withAnimation(.easeIn(duration: 0.18)) { flashOpacity = 0.0 }
-            try? await Task.sleep(nanoseconds: 180_000_000)
+            Color.white
+                .opacity(min(intensity, spike))
+                .ignoresSafeArea()
+                .allowsHitTesting(false)
         }
     }
 }
-

@@ -15,9 +15,9 @@ struct AppBackgroundView: View {
                 CloudOverlay(intensity: 0.25)
                 SnowEffectView()
             case .storm:
-                CloudOverlay(intensity: 0.45)
-                RainEffectView(density: 1.2)
-                LightningFlashView()
+                CloudOverlay(intensity: 0.55)
+                RainEffectView(density: 2.0)
+                LightningFlashView(intensity: 0.7)
             case .cloudy:
                 CloudOverlay(intensity: 0.25)
             case .clear, .none:
