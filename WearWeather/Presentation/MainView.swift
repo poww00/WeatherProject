@@ -6,141 +6,120 @@ struct MainView: View {
 
     var body: some View {
         ZStack {
-            // 1. 배경
             AppBackgroundView(condition: vm.weather?.condition)
 
-            VStack(spacing: 16) {
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 18) {
 
-                // 상단 헤더
-                HStack {
-                    Image(systemName: "mappin.and.ellipse")
-                        .font(.title2)
-                        .foregroundColor(.white)
+                    Spacer().frame(height: 70)
 
-                    Text(vm.locationName)
-                        .font(.title3)
-                        .bold()
-                        .foregroundColor(.white)
+                    // ✅ 캐릭터(가슴: 현재온도 + H/L/상태)
+                    OutfitAvatarView(
+                        outfit: vm.outfit,
+                        temperatureText: vm.weather?.tempString ?? "--°",
+                        summaryText: summaryLine()
+                    )
+                    .padding(.bottom, 10)
 
-                    Spacer()
+                    // ✅ 섹션 간격 확보 (캐릭터 ↔ 아래 카드)
+                    Spacer().frame(height: 6)
 
-                    Button {
-                        vm.manualRefresh()
-                    } label: {
-                        Image(systemName: "arrow.clockwise")
-                            .font(.title3)
-                            .foregroundColor(.white)
-                    }
-                }
-                .padding(.horizontal)
-                .padding(.top, 8)
+                    // ✅ 오늘 코디(디버그용)
+                    #if DEBUG
+                    sectionCard(title: "오늘 코디(디버그)", trailing: {
+                        if vm.isLoading { ProgressView() }
+                    }) {
+                        WrapTags(tags: outfitTags(vm.outfit))
 
-                // 중앙 캐릭터 + 온도
-                VStack(spacing: 10) {
-                    ZStack {
-                        // (지금은 도형 캐릭터 그대로 유지)
-                        RoundedRectangle(cornerRadius: 20)
-                            .fill(Color.white.opacity(0.25))
-                            .frame(width: 220, height: 260)
-
-                        VStack(spacing: 12) {
-                            // 얼굴
-                            Circle()
-                                .fill(Color.white.opacity(0.9))
-                                .frame(width: 70, height: 70)
-
-                            // 상의(더미)
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(Color.white.opacity(0.8))
-                                .frame(width: 140, height: 70)
-
-                            // 하의(더미)
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(Color.white.opacity(0.7))
-                                .frame(width: 120, height: 55)
+                        if let err = vm.errorMessage {
+                            Text(err)
+                                .font(.footnote)
+                                .foregroundColor(.red)
+                                .padding(.top, 6)
                         }
                     }
+                    .padding(.horizontal)
+                    #endif
 
-                    Text(vm.weather?.tempString ?? "--°")
-                        .font(.system(size: 52, weight: .bold))
-                        .foregroundColor(.white)
-
-                    // 최고/최저 + 상태
-                    HStack(spacing: 10) {
-                        if let w = vm.weather {
-                            Text("H \(Int(w.highTemperature))°")
-                                .foregroundColor(.white.opacity(0.9))
-                            Text("L \(Int(w.lowTemperature))°")
-                                .foregroundColor(.white.opacity(0.9))
-                            Text("· \(conditionText(w.condition))")
-                                .foregroundColor(.white.opacity(0.9))
-                        } else {
-                            Text("날씨 불러오는 중")
-                                .foregroundColor(.white.opacity(0.9))
-                        }
-                    }
-                    .font(.headline)
-                }
-
-                // 추천 코디 카드
-                VStack(alignment: .leading, spacing: 12) {
-                    HStack {
-                        Text("오늘 코디")
-                            .font(.headline)
-
-                        Spacer()
-
-                        if vm.isLoading {
-                            ProgressView()
-                        }
-                    }
-
-                    // 코디 태그들(일단 문자열로 확인 가능하게)
-                    WrapTags(tags: outfitTags(vm.outfit))
-
-                    if let err = vm.errorMessage {
-                        Text(err)
-                            .font(.footnote)
-                            .foregroundColor(.red)
-                    }
-                }
-                .padding()
-                .background(Color.white.opacity(0.92))
-                .cornerRadius(18)
-                .padding(.horizontal)
-
-                // 하단 Hourly Forecast (일단은 기존 더미 유지)
-                VStack(alignment: .leading) {
-                    Text("Hourly Forecast")
-                        .font(.headline)
-                        .padding(.horizontal)
-
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 12) {
-                            ForEach(vm.hourly) { item in
-                                VStack(spacing: 8) {
-                                    Text(item.hourText)
-                                        .font(.subheadline)
-                                        .foregroundColor(.gray)
-
-                                    Image(systemName: symbolName(for: item.condition))
-                                        .font(.title2)
-
-                                    Text("\(item.temperature)°")
-                                        .font(.headline)
+                    // ✅ Hourly Forecast
+                    sectionCard(title: "Hourly Forecast") {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 12) {
+                                ForEach(vm.hourly) { item in
+                                    HourlyCard(
+                                        hourText: item.hourText,
+                                        symbol: symbolName(for: item.condition),
+                                        temp: item.temperature
+                                    )
                                 }
-                                .padding()
-                                .background(Color.white.opacity(0.85))
-                                .cornerRadius(16)
                             }
+                            .padding(.horizontal, 2)
+                            .padding(.vertical, 4)
                         }
-                        .padding(.horizontal)
                     }
-                }
+                    .padding(.horizontal)
 
-                Spacer()
+                    // ✅ Daily Forecast(7일) — UI 개선 핵심
+                    sectionCard(title: "Daily Forecast") {
+                        if vm.daily.isEmpty {
+                            VStack(spacing: 10) {
+                                ProgressView()
+                                Text("주간 예보 불러오는 중…")
+                                    .foregroundColor(.black.opacity(0.55))
+                                    .font(.subheadline)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                        } else {
+                            DailyForecastList(daily: vm.daily)
+                        }
+                    }
+                    .padding(.horizontal)
+
+                    Spacer(minLength: 22)
+                }
+                .padding(.bottom, 24)
+            }
+            .modifier(AlwaysBounceIfPossible())
+            .safeAreaInset(edge: .top) {
+                header
+                    .padding(.horizontal)
+                    .padding(.top, 8)
+                    .padding(.bottom, 10)
+                    .background(Color.black.opacity(0.10).ignoresSafeArea())
+                    .zIndex(999)
             }
         }
+    }
+
+    // MARK: - Header
+
+    private var header: some View {
+        HStack {
+            Image(systemName: "mappin.and.ellipse")
+                .font(.title2)
+                .foregroundColor(.white)
+
+            Text(vm.locationName)
+                .font(.title3)
+                .bold()
+                .foregroundColor(.white)
+
+            Spacer()
+
+            Button { vm.manualRefresh() } label: {
+                Image(systemName: "arrow.clockwise")
+                    .font(.title3)
+                    .foregroundColor(.white)
+            }
+        }
+    }
+
+    // MARK: - Helpers
+
+    private func summaryLine() -> String? {
+        guard let w = vm.weather else { return nil }
+        return "H \(Int(w.highTemperature))°  L \(Int(w.lowTemperature))° · \(conditionText(w.condition))"
     }
 
     private func conditionText(_ c: WeatherModel.WeatherCondition) -> String {
@@ -162,6 +141,108 @@ struct MainView: View {
         if outfit.hasMask { tags.append("마스크") }
         return tags
     }
+
+    private func symbolName(for c: WeatherModel.WeatherCondition) -> String {
+        switch c {
+        case .clear: return "sun.max.fill"
+        case .cloudy: return "cloud.fill"
+        case .rain: return "cloud.rain.fill"
+        case .snow: return "snowflake"
+        case .storm: return "cloud.bolt.rain.fill"
+        }
+    }
+
+    // MARK: - UI blocks
+
+    private func sectionCard<Content: View, Trailing: View>(
+        title: String,
+        @ViewBuilder trailing: () -> Trailing,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text(title)
+                    .font(.headline)
+                    .foregroundColor(.black.opacity(0.85))
+
+                Spacer()
+
+                trailing()
+            }
+
+            content()
+        }
+        .padding(16)
+        .background(Color.white.opacity(0.92))
+        .cornerRadius(20)
+        .shadow(color: Color.black.opacity(0.06), radius: 10, x: 0, y: 6)
+    }
+
+    private func sectionCard<Content: View>(
+        title: String,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        sectionCard(title: title, trailing: { EmptyView() }, content: content)
+    }
+}
+
+// MARK: - Hourly Card
+
+private struct HourlyCard: View {
+    let hourText: String
+    let symbol: String
+    let temp: Int
+
+    var body: some View {
+        VStack(spacing: 10) {
+            Text(hourText)
+                .font(.subheadline)
+                .foregroundColor(.black.opacity(0.55))
+
+            Image(systemName: symbol)
+                .font(.title2)
+                .foregroundColor(.black.opacity(0.75))
+
+            Text("\(temp)°")
+                .font(.headline)
+                .foregroundColor(.black.opacity(0.85))
+        }
+        .frame(width: 72)
+        .padding(.vertical, 14)
+        .background(Color.white.opacity(0.85))
+        .cornerRadius(18)
+        .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 5)
+    }
+}
+
+// MARK: - Daily Forecast List (7일, 막대 UI)
+
+private struct DailyForecastList: View {
+    let daily: [DailyForecastItem]
+
+    private var globalMin: Double {
+        daily.map { $0.lowTemperature }.min() ?? 0
+    }
+
+    private var globalMax: Double {
+        daily.map { $0.highTemperature }.max() ?? 0
+    }
+
+    var body: some View {
+        VStack(spacing: 10) {
+            ForEach(daily) { d in
+                DailyForecastRow(
+                    dayText: d.dayText,
+                    symbol: symbolName(for: d.condition),
+                    low: d.lowTemperature,
+                    high: d.highTemperature,
+                    globalMin: globalMin,
+                    globalMax: globalMax
+                )
+            }
+        }
+    }
+
     private func symbolName(for c: WeatherModel.WeatherCondition) -> String {
         switch c {
         case .clear: return "sun.max.fill"
@@ -173,14 +254,97 @@ struct MainView: View {
     }
 }
 
-// MARK: - 작은 유틸 UI(태그 래핑)
+private struct DailyForecastRow: View {
+    let dayText: String
+    let symbol: String
+    let low: Double
+    let high: Double
+    let globalMin: Double
+    let globalMax: Double
+
+    var body: some View {
+        HStack(spacing: 12) {
+            // 요일
+            Text(dayText)
+                .font(.headline)
+                .foregroundColor(.black.opacity(0.85))
+                .frame(width: 44, alignment: .leading)
+
+            // 아이콘
+            Image(systemName: symbol)
+                .font(.title3)
+                .foregroundColor(.black.opacity(0.75))
+                .frame(width: 24)
+
+            // 막대(최저~최고)
+            TemperatureBar(
+                low: low,
+                high: high,
+                globalMin: globalMin,
+                globalMax: globalMax
+            )
+            .frame(height: 10)
+
+            // H/L 숫자
+            VStack(alignment: .trailing, spacing: 2) {
+                Text("H \(Int(high))°")
+                    .font(.subheadline)
+                    .foregroundColor(.black.opacity(0.75))
+                Text("L \(Int(low))°")
+                    .font(.subheadline)
+                    .foregroundColor(.black.opacity(0.55))
+            }
+            .frame(width: 64, alignment: .trailing)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 12)
+        .background(Color.black.opacity(0.04))
+        .cornerRadius(16)
+    }
+}
+
+private struct TemperatureBar: View {
+    let low: Double
+    let high: Double
+    let globalMin: Double
+    let globalMax: Double
+
+    var body: some View {
+        GeometryReader { geo in
+            let width = geo.size.width
+            let range = max(globalMax - globalMin, 0.1)
+            let startRatio = (low - globalMin) / range
+            let endRatio = (high - globalMin) / range
+
+            let startX = max(0, min(width, width * startRatio))
+            let endX = max(0, min(width, width * endRatio))
+            let barW = max(6, endX - startX)
+
+            ZStack(alignment: .leading) {
+                Capsule()
+                    .fill(Color.black.opacity(0.10))
+
+                Capsule()
+                    .fill(Color.black.opacity(0.35))
+                    .frame(width: barW)
+                    .offset(x: startX)
+            }
+        }
+    }
+}
+
+// MARK: - Tags UI
+
 private struct WrapTags: View {
     let tags: [String]
 
+    private let columns = [
+        GridItem(.adaptive(minimum: 90), spacing: 8)
+    ]
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            // 간단 래핑(두 줄 이상이면 자동 줄바꿈)
-            FlexibleView(data: tags, spacing: 8, alignment: .leading) { tag in
+        LazyVGrid(columns: columns, alignment: .leading, spacing: 8) {
+            ForEach(tags, id: \.self) { tag in
                 Text(tag)
                     .font(.subheadline)
                     .padding(.vertical, 6)
@@ -192,51 +356,14 @@ private struct WrapTags: View {
     }
 }
 
-private struct FlexibleView<Data: Collection, Content: View>: View where Data.Element: Hashable {
-    let data: Data
-    let spacing: CGFloat
-    let alignment: HorizontalAlignment
-    let content: (Data.Element) -> Content
+// MARK: - iOS17+ bounce
 
-    init(data: Data,
-         spacing: CGFloat = 8,
-         alignment: HorizontalAlignment = .leading,
-         @ViewBuilder content: @escaping (Data.Element) -> Content) {
-        self.data = data
-        self.spacing = spacing
-        self.alignment = alignment
-        self.content = content
-    }
-
-    var body: some View {
-        GeometryReader { geometry in
-            generateContent(in: geometry)
-        }
-        .frame(minHeight: 0)
-    }
-
-    private func generateContent(in geometry: GeometryProxy) -> some View {
-        var width: CGFloat = 0
-        var height: CGFloat = 0
-
-        return ZStack(alignment: Alignment(horizontal: alignment, vertical: .top)) {
-            ForEach(Array(data), id: \.self) { element in
-                content(element)
-                    .padding(.all, spacing / 2)
-                    .alignmentGuide(.leading) { d in
-                        if width + d.width > geometry.size.width {
-                            width = 0
-                            height -= d.height
-                        }
-                        let result = width
-                        width += d.width
-                        return result
-                    }
-                    .alignmentGuide(.top) { _ in
-                        let result = height
-                        return result
-                    }
-            }
+private struct AlwaysBounceIfPossible: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(iOS 17.0, *) {
+            content.scrollBounceBehavior(.always)
+        } else {
+            content
         }
     }
 }

@@ -10,6 +10,7 @@ final class MainViewModel: ObservableObject {
     @Published var weather: WeatherModel?
     @Published var outfit: ClothingModel = .default
     @Published var hourly: [HourlyForecastItem] = []
+    @Published var daily: [DailyForecastItem] = []       // ✅ 추가
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
 
@@ -22,7 +23,7 @@ final class MainViewModel: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
 
     // MARK: - Cache
-    private let cacheKey = "WearWeather.cache.v2"
+    private let cacheKey = "WearWeather.cache.v3"         // ✅ 버전 업
     private let cacheTTL: TimeInterval = 15 * 60 // 15분
 
     struct CachePayload: Codable {
@@ -30,20 +31,18 @@ final class MainViewModel: ObservableObject {
         let locationName: String
         let weather: WeatherModel
         let outfit: ClothingModel
+        let daily: [DailyForecastItem]                    // ✅ 추가
     }
 
     init() {
-        // 목데이터/실데이터 공급자 선택
         if AppConfig.useMockWeather {
             self.weatherProvider = MockWeatherProvider(style: .random)
         } else {
             self.weatherProvider = WeatherManager.shared
         }
 
-        // 캐시 먼저 로드
         loadCacheIfValid()
 
-        // 위치 구독
         locationManager.$location
             .compactMap { $0 }
             .removeDuplicates(by: { lhs, rhs in lhs.distance(from: rhs) < 50 })
@@ -54,7 +53,6 @@ final class MainViewModel: ObservableObject {
             }
             .store(in: &cancellables)
 
-        // 시작 시점에도 mock은 바로 뿌리기
         Task { await refreshWeather(using: nil, force: false) }
     }
 
@@ -64,7 +62,6 @@ final class MainViewModel: ObservableObject {
 
     private func refreshWeather(using location: CLLocation?, force: Bool) async {
         if !force, isCacheStillValid() {
-            // 캐시로 화면은 뜨니까 hourly만 맞춰서 다시 생성(앱 UX용)
             if let w = weather {
                 self.hourly = makeMockHourly(from: w)
             }
@@ -78,8 +75,11 @@ final class MainViewModel: ObservableObject {
         let lon = location?.coordinate.longitude ?? 126.9780
 
         do {
-            let w = try await weatherProvider.getWeather(latitude: lat, longitude: lon)
+            let pkg = try await weatherProvider.getWeatherPackage(latitude: lat, longitude: lon)
+
+            let w = pkg.current
             self.weather = w
+            self.daily = pkg.daily
 
             let recommended = Stylist.shared.recommendOutfit(
                 temp: w.temperature,
@@ -88,7 +88,6 @@ final class MainViewModel: ObservableObject {
             )
             self.outfit = recommended
 
-            // ✅ Hourly 목데이터 생성
             self.hourly = makeMockHourly(from: w)
 
             saveCache()
@@ -101,18 +100,15 @@ final class MainViewModel: ObservableObject {
     }
 
     private func makeMockHourly(from weather: WeatherModel) -> [HourlyForecastItem] {
-        // 현재 온도를 중심으로 8개 생성(진짜처럼 흔들리게)
         let base = Int(weather.temperature.rounded())
         let now = Calendar.current.component(.hour, from: Date())
 
         func tempOffset(_ i: Int) -> Int {
-            // -2 ~ +3 범위에서 자연스럽게 흔들림
             let pattern = [-2, -1, 0, 1, 2, 1, 0, -1]
             return pattern[i % pattern.count]
         }
 
         func conditionForHour(_ i: Int) -> WeatherModel.WeatherCondition {
-            // 현재 condition 중심으로 약간만 변화(폭풍이면 비로 약화되는 느낌)
             switch weather.condition {
             case .storm:
                 return (i % 3 == 0) ? .storm : .rain
@@ -173,6 +169,7 @@ final class MainViewModel: ObservableObject {
         self.locationName = payload.locationName
         self.weather = payload.weather
         self.outfit = payload.outfit
+        self.daily = payload.daily
         self.hourly = makeMockHourly(from: payload.weather)
     }
 
@@ -182,7 +179,8 @@ final class MainViewModel: ObservableObject {
             savedAt: Date().timeIntervalSince1970,
             locationName: locationName,
             weather: weather,
-            outfit: outfit
+            outfit: outfit,
+            daily: daily
         )
         guard let data = try? JSONEncoder().encode(payload) else { return }
         UserDefaults.standard.set(data, forKey: cacheKey)

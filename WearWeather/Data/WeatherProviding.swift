@@ -1,6 +1,12 @@
 import Foundation
 import CoreLocation
 
-protocol WeatherProviding {
-    func getWeather(latitude: Double, longitude: Double) async throws -> WeatherModel
+struct WeatherPackage: Codable, Equatable {
+    let current: WeatherModel
+    let daily: [DailyForecastItem]
 }
+
+protocol WeatherProviding {
+    func getWeatherPackage(latitude: Double, longitude: Double) async throws -> WeatherPackage
+}
+

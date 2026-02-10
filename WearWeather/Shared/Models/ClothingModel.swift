@@ -5,6 +5,7 @@ struct ClothingModel: Codable, Equatable {
     let bottom: String
     let outer: String?
     let accessory: String?
+    let shoes: String          // ✅ 추가
     let hasMask: Bool
 
     static let `default` = ClothingModel(
@@ -12,6 +13,7 @@ struct ClothingModel: Codable, Equatable {
         bottom: "shorts_basic",
         outer: nil,
         accessory: nil,
+        shoes: "shoes_basic",   // ✅ 기본 신발
         hasMask: false
     )
 }

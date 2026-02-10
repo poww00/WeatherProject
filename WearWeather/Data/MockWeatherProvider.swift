@@ -17,59 +17,65 @@ final class MockWeatherProvider: WeatherProviding {
         self.style = style
     }
 
-    func getWeather(latitude: Double, longitude: Double) async throws -> WeatherModel {
-        // 새로고침할 때마다 자연스럽게 바뀌게
+    func getWeatherPackage(latitude: Double, longitude: Double) async throws -> WeatherPackage {
         let pick = (style == .random) ? randomStyleByTime() : style
 
+        let current: WeatherModel
         switch pick {
         case .warmClear:
-            return WeatherModel(
-                temperature: 27,
-                condition: .clear,
-                highTemperature: 29,
-                lowTemperature: 21
-            )
+            current = WeatherModel(temperature: 27, condition: .clear, highTemperature: 29, lowTemperature: 21)
         case .mildCloudy:
-            return WeatherModel(
-                temperature: 18,
-                condition: .cloudy,
-                highTemperature: 20,
-                lowTemperature: 14
-            )
+            current = WeatherModel(temperature: 18, condition: .cloudy, highTemperature: 20, lowTemperature: 14)
         case .rainy:
-            return WeatherModel(
-                temperature: 16,
-                condition: .rain,
-                highTemperature: 17,
-                lowTemperature: 12
-            )
+            current = WeatherModel(temperature: 16, condition: .rain, highTemperature: 17, lowTemperature: 12)
         case .snowy:
-            return WeatherModel(
-                temperature: -1,
-                condition: .snow,
-                highTemperature: 0,
-                lowTemperature: -6
-            )
+            current = WeatherModel(temperature: -1, condition: .snow, highTemperature: 0, lowTemperature: -6)
         case .stormy:
-            return WeatherModel(
-                temperature: 12,
-                condition: .storm,
-                highTemperature: 13,
-                lowTemperature: 8
-            )
+            current = WeatherModel(temperature: 12, condition: .storm, highTemperature: 13, lowTemperature: 8)
         case .random:
-            // 위에서 이미 처리됨
-            return WeatherModel(
-                temperature: 20,
-                condition: .cloudy,
-                highTemperature: 22,
-                lowTemperature: 16
+            current = WeatherModel(temperature: 20, condition: .cloudy, highTemperature: 22, lowTemperature: 16)
+        }
+
+        let daily = makeMockDaily(from: current, days: 7)
+        return WeatherPackage(current: current, daily: daily)
+    }
+
+    private func makeMockDaily(from current: WeatherModel, days: Int) -> [DailyForecastItem] {
+        let cal = Calendar.current
+        let baseHigh = Int(current.highTemperature.rounded())
+        let baseLow = Int(current.lowTemperature.rounded())
+
+        func conditionForDay(_ i: Int) -> WeatherModel.WeatherCondition {
+            // 현재 상태 중심으로 살짝만 변화
+            switch current.condition {
+            case .storm:
+                return (i % 3 == 0) ? .storm : .rain
+            case .snow:
+                return (i % 4 == 0) ? .snow : .cloudy
+            case .rain:
+                return (i % 4 == 0) ? .rain : .cloudy
+            case .cloudy:
+                return (i % 5 == 0) ? .cloudy : .clear
+            case .clear:
+                return .clear
+            }
+        }
+
+        return (0..<days).compactMap { i in
+            guard let date = cal.date(byAdding: .day, value: i, to: Date()) else { return nil }
+            let wiggle = [0, 1, -1, 2, -2, 1, 0][i % 7]
+            let high = Double(baseHigh + wiggle)
+            let low = Double(baseLow + min(wiggle, 0))
+            return DailyForecastItem(
+                date: date,
+                highTemperature: high,
+                lowTemperature: low,
+                condition: conditionForDay(i)
             )
         }
     }
 
     private func randomStyleByTime() -> MockStyle {
-        // 시간 기반으로 바뀌게 (테스트할 때 같은 값만 계속 나오지 않도록)
         let t = Int(Date().timeIntervalSince1970)
         switch t % 5 {
         case 0: return .warmClear
