@@ -13,7 +13,6 @@ final class MainViewModel: ObservableObject {
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
 
-    // ✅ 공기질 상태(마스크 토글에 사용)
     @Published var isBadAir: Bool = false
 
     private let locationManager = LocationManager()
@@ -21,7 +20,6 @@ final class MainViewModel: ObservableObject {
     private let weatherProvider: WeatherProviding
     private var cancellables = Set<AnyCancellable>()
 
-    // ✅ 모델 확장(AQI/PM2.5) 들어가서 안전하게 v5
     private let cacheKey = "WearWeather.cache.v5"
     private let cacheTTL: TimeInterval = 15 * 60
 
@@ -63,6 +61,8 @@ final class MainViewModel: ObservableObject {
     private func refreshWeather(using location: CLLocation?, force: Bool) async {
         if !force, isCacheStillValid() {
             if let w = weather { self.hourly = makeMockHourly(from: w) }
+            // 캐시로 들어온 경우에도 위젯 스냅샷 동기화(안전)
+            saveWidgetSnapshotIfPossible()
             return
         }
 
@@ -79,7 +79,6 @@ final class MainViewModel: ObservableObject {
             self.weather = w
             self.daily = pkg.daily
 
-            // ✅ 공기질 상태 → 마스크/스타일 추천에 연결
             let badAir = w.isBadAir
             self.isBadAir = badAir
 
@@ -93,12 +92,32 @@ final class MainViewModel: ObservableObject {
             self.hourly = makeMockHourly(from: w)
 
             saveCache()
+
+            // ✅ refresh 성공 시점에 위젯 스냅샷 저장
+            saveWidgetSnapshotIfPossible()
+
         } catch {
             let ns = error as NSError
             self.errorMessage = "날씨 가져오기 실패: \(ns.localizedDescription)"
         }
 
         isLoading = false
+    }
+
+    private func saveWidgetSnapshotIfPossible() {
+        guard let w = weather else { return }
+
+        let snap = WidgetSnapshot.make(
+            locationName: locationName,
+            weather: w,
+            outfit: outfit
+        )
+
+        AppGroupStore.save(
+            snap,
+            key: AppConfig.widgetSnapshotKey,
+            suiteName: AppConfig.appGroupId
+        )
     }
 
     private func makeMockHourly(from weather: WeatherModel) -> [HourlyForecastItem] {
@@ -170,6 +189,9 @@ final class MainViewModel: ObservableObject {
         self.daily = payload.daily
         self.isBadAir = payload.isBadAir
         self.hourly = makeMockHourly(from: payload.weather)
+
+        // ✅ 캐시로 들어와도 위젯 스냅샷 동기화
+        saveWidgetSnapshotIfPossible()
     }
 
     private func saveCache() {
