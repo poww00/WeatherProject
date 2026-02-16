@@ -5,7 +5,6 @@ import CoreLocation
 @MainActor
 final class MainViewModel: ObservableObject {
 
-    // MARK: - Published
     @Published var locationName: String = "내 위치"
     @Published var weather: WeatherModel?
     @Published var outfit: ClothingModel = .default
@@ -14,17 +13,17 @@ final class MainViewModel: ObservableObject {
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
 
-    // MARK: - Dependencies
+    // ✅ 공기질 상태(마스크 토글에 사용)
+    @Published var isBadAir: Bool = false
+
     private let locationManager = LocationManager()
     private let geocoder = CLGeocoder()
     private let weatherProvider: WeatherProviding
-
-    // MARK: - Combine
     private var cancellables = Set<AnyCancellable>()
 
-    // MARK: - Cache
-    private let cacheKey = "WearWeather.cache.v4"   // ✅ v4
-    private let cacheTTL: TimeInterval = 15 * 60    // 15분
+    // ✅ 모델 확장(AQI/PM2.5) 들어가서 안전하게 v5
+    private let cacheKey = "WearWeather.cache.v5"
+    private let cacheTTL: TimeInterval = 15 * 60
 
     struct CachePayload: Codable {
         let savedAt: TimeInterval
@@ -32,6 +31,7 @@ final class MainViewModel: ObservableObject {
         let weather: WeatherModel
         let outfit: ClothingModel
         let daily: [DailyForecastItem]
+        let isBadAir: Bool
     }
 
     init() {
@@ -62,9 +62,7 @@ final class MainViewModel: ObservableObject {
 
     private func refreshWeather(using location: CLLocation?, force: Bool) async {
         if !force, isCacheStillValid() {
-            if let w = weather {
-                self.hourly = makeMockHourly(from: w)
-            }
+            if let w = weather { self.hourly = makeMockHourly(from: w) }
             return
         }
 
@@ -81,14 +79,17 @@ final class MainViewModel: ObservableObject {
             self.weather = w
             self.daily = pkg.daily
 
+            // ✅ 공기질 상태 → 마스크/스타일 추천에 연결
+            let badAir = w.isBadAir
+            self.isBadAir = badAir
+
             let recommended = Stylist.shared.recommendOutfit(
                 temp: w.temperature,
                 condition: w.condition,
-                isBadAir: false
+                isBadAir: badAir
             )
             self.outfit = recommended
 
-            // (현재 프로젝트는 hourly를 간단 생성)
             self.hourly = makeMockHourly(from: w)
 
             saveCache()
@@ -111,16 +112,11 @@ final class MainViewModel: ObservableObject {
 
         func conditionForHour(_ i: Int) -> WeatherModel.WeatherCondition {
             switch weather.condition {
-            case .storm:
-                return (i % 3 == 0) ? .storm : .rain
-            case .snow:
-                return (i % 4 == 0) ? .snow : .cloudy
-            case .rain:
-                return (i % 4 == 0) ? .rain : .cloudy
-            case .cloudy:
-                return (i % 5 == 0) ? .cloudy : .clear
-            case .clear:
-                return .clear
+            case .storm: return (i % 3 == 0) ? .storm : .rain
+            case .snow:  return (i % 4 == 0) ? .snow : .cloudy
+            case .rain:  return (i % 4 == 0) ? .rain : .cloudy
+            case .cloudy:return (i % 5 == 0) ? .cloudy : .clear
+            case .clear: return .clear
             }
         }
 
@@ -148,7 +144,7 @@ final class MainViewModel: ObservableObject {
         }
     }
 
-    // MARK: - Cache helpers
+    // MARK: - Cache
 
     private func isCacheStillValid() -> Bool {
         guard
@@ -172,7 +168,7 @@ final class MainViewModel: ObservableObject {
         self.weather = payload.weather
         self.outfit = payload.outfit
         self.daily = payload.daily
-
+        self.isBadAir = payload.isBadAir
         self.hourly = makeMockHourly(from: payload.weather)
     }
 
@@ -183,7 +179,8 @@ final class MainViewModel: ObservableObject {
             locationName: locationName,
             weather: weather,
             outfit: outfit,
-            daily: daily
+            daily: daily,
+            isBadAir: isBadAir
         )
         guard let data = try? JSONEncoder().encode(payload) else { return }
         UserDefaults.standard.set(data, forKey: cacheKey)

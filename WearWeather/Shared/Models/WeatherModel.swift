@@ -16,16 +16,22 @@ struct WeatherModel: Codable, Equatable {
     let highTemperature: Double
     let lowTemperature: Double
 
-    // ✅ 상세값(optional)
+    // 상세값(optional)
     let feelsLike: Double?
-    /// 0~1 (WeatherKit humidity가 보통 이 범위)
+    /// 0~1
     let humidity: Double?
-    /// m/s 기준 값으로 저장
+    /// m/s
     let windSpeed: Double?
-    /// 도(degrees) 0~360
+    /// degrees 0~360
     let windDirection: Double?
     /// 0~1
     let precipitationChance: Double?
+
+    // ✅ 공기질(optional) — 지금은 Mock에서만 채움
+    /// US AQI 기준 (0~500)
+    let aqi: Int?
+    /// PM2.5 µg/m³ (선택)
+    let pm25: Double?
 
     // MARK: - Display strings
 
@@ -42,7 +48,6 @@ struct WeatherModel: Codable, Equatable {
         return "\(pct)%"
     }
 
-    /// 풍향(16방위) + 풍속(m/s)
     var windString: String {
         guard let sp = windSpeed else { return "--" }
         let speedText = String(format: "%.1f m/s", sp)
@@ -60,10 +65,38 @@ struct WeatherModel: Codable, Equatable {
         return "\(pct)%"
     }
 
+    // ✅ AQI 표시
+    var aqiString: String {
+        guard let v = aqi else { return "--" }
+        return "\(v)"
+    }
+
+    var pm25String: String {
+        guard let v = pm25 else { return "--" }
+        // 소수점 0~1자리 정도만
+        return String(format: "%.0f µg/m³", v)
+    }
+
+    /// AQI 상태 텍스트(한글)
+    var aqiStatusText: String {
+        guard let v = aqi else { return "--" }
+        switch v {
+        case 0...50: return "좋음"
+        case 51...100: return "보통"
+        case 101...150: return "나쁨"
+        default: return "매우나쁨"
+        }
+    }
+
+    /// 마스크 권장 기준(임시): AQI 101 이상이면 true
+    var isBadAir: Bool {
+        guard let v = aqi else { return false }
+        return v >= 101
+    }
+
     // MARK: - Helpers
 
     private func windDirectionText(_ degrees: Double) -> String {
-        // 16방위 (N, NNE, NE...)
         let dirs = ["N","NNE","NE","ENE","E","ESE","SE","SSE",
                     "S","SSW","SW","WSW","W","WNW","NW","NNW"]
         let normalized = (degrees.truncatingRemainder(dividingBy: 360) + 360)
@@ -72,7 +105,7 @@ struct WeatherModel: Codable, Equatable {
         return dirs[idx]
     }
 
-    // ✅ 기존 코드와 호환되게 기본 생성용 init 제공(상세값 nil)
+    // init (기존 호출부 호환)
     init(
         temperature: Double,
         condition: WeatherCondition,
@@ -82,7 +115,9 @@ struct WeatherModel: Codable, Equatable {
         humidity: Double? = nil,
         windSpeed: Double? = nil,
         windDirection: Double? = nil,
-        precipitationChance: Double? = nil
+        precipitationChance: Double? = nil,
+        aqi: Int? = nil,
+        pm25: Double? = nil
     ) {
         self.temperature = temperature
         self.condition = condition
@@ -93,5 +128,7 @@ struct WeatherModel: Codable, Equatable {
         self.windSpeed = windSpeed
         self.windDirection = windDirection
         self.precipitationChance = precipitationChance
+        self.aqi = aqi
+        self.pm25 = pm25
     }
 }

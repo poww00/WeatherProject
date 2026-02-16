@@ -13,7 +13,6 @@ struct MainView: View {
 
                     Spacer().frame(height: 70)
 
-                    // 캐릭터(가슴: 현재온도 + H/L/상태)
                     OutfitAvatarView(
                         outfit: vm.outfit,
                         temperatureText: vm.weather?.tempString ?? "--°",
@@ -58,9 +57,15 @@ struct MainView: View {
                     }
                     .padding(.horizontal)
 
-                    // ✅ Weather Details (NEW)
+                    // Weather Details
                     sectionCard(title: "Weather Details") {
                         WeatherDetailsGrid(weather: vm.weather)
+                    }
+                    .padding(.horizontal)
+
+                    // ✅ Air Quality
+                    sectionCard(title: "Air Quality") {
+                        AirQualityRow(weather: vm.weather)
                     }
                     .padding(.horizontal)
 
@@ -79,8 +84,6 @@ struct MainView: View {
             }
         }
     }
-
-    // MARK: - Header
 
     private var header: some View {
         HStack {
@@ -102,8 +105,6 @@ struct MainView: View {
             }
         }
     }
-
-    // MARK: - Helpers
 
     private func summaryLine() -> String? {
         guard let w = vm.weather else { return nil }
@@ -130,8 +131,7 @@ struct MainView: View {
         }
     }
 
-    // MARK: - Card Style (기존 톤 유지)
-
+    // Card style (톤 동일)
     private func sectionCard<Content: View>(
         title: String,
         @ViewBuilder content: () -> Content
@@ -153,6 +153,54 @@ struct MainView: View {
     }
 }
 
+// MARK: - Air Quality UI
+
+private struct AirQualityRow: View {
+    let weather: WeatherModel?
+
+    var body: some View {
+        let aqiText = weather?.aqiString ?? "--"
+        let status = weather?.aqiStatusText ?? "--"
+        let pm25 = weather?.pm25String ?? "--"
+
+        HStack(spacing: 12) {
+            Image(systemName: "aqi.medium")
+                .font(.title2)
+                .foregroundColor(.black.opacity(0.75))
+                .frame(width: 28)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text("대기질(AQI)")
+                    .font(.caption)
+                    .foregroundColor(.black.opacity(0.55))
+
+                Text("\(status) · \(aqiText)")
+                    .font(.headline)
+                    .foregroundColor(.black.opacity(0.85))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
+
+            Spacer()
+
+            VStack(alignment: .trailing, spacing: 4) {
+                Text("PM2.5")
+                    .font(.caption)
+                    .foregroundColor(.black.opacity(0.55))
+                Text(pm25)
+                    .font(.subheadline)
+                    .foregroundColor(.black.opacity(0.75))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 12)
+        .background(Color.black.opacity(0.04))
+        .cornerRadius(16)
+    }
+}
+
 // MARK: - Weather Details Grid
 
 private struct WeatherDetailsGrid: View {
@@ -165,29 +213,10 @@ private struct WeatherDetailsGrid: View {
 
     var body: some View {
         LazyVGrid(columns: columns, alignment: .leading, spacing: 12) {
-            detailCell(
-                icon: "thermometer.medium",
-                title: "체감온도",
-                value: weather?.feelsLikeString ?? "--"
-            )
-
-            detailCell(
-                icon: "drop.fill",
-                title: "습도",
-                value: weather?.humidityString ?? "--"
-            )
-
-            detailCell(
-                icon: "wind",
-                title: "바람",
-                value: weather?.windString ?? "--"
-            )
-
-            detailCell(
-                icon: "umbrella.fill",
-                title: "강수확률",
-                value: weather?.precipChanceString ?? "--"
-            )
+            detailCell(icon: "thermometer.medium", title: "체감온도", value: weather?.feelsLikeString ?? "--")
+            detailCell(icon: "drop.fill", title: "습도", value: weather?.humidityString ?? "--")
+            detailCell(icon: "wind", title: "바람", value: weather?.windString ?? "--")
+            detailCell(icon: "umbrella.fill", title: "강수확률", value: weather?.precipChanceString ?? "--")
         }
     }
 
@@ -247,7 +276,7 @@ private struct HourlyCard: View {
     }
 }
 
-// MARK: - Daily Forecast List (7일, 막대 UI)
+// MARK: - Daily Forecast List
 
 private struct DailyForecastList: View {
     let daily: [DailyForecastItem]
@@ -301,13 +330,8 @@ private struct DailyForecastRow: View {
                 .foregroundColor(.black.opacity(0.75))
                 .frame(width: 24)
 
-            TemperatureBar(
-                low: low,
-                high: high,
-                globalMin: globalMin,
-                globalMax: globalMax
-            )
-            .frame(height: 10)
+            TemperatureBar(low: low, high: high, globalMin: globalMin, globalMax: globalMax)
+                .frame(height: 10)
 
             VStack(alignment: .trailing, spacing: 2) {
                 Text("H \(Int(high))°")
@@ -344,9 +368,7 @@ private struct TemperatureBar: View {
             let barW = max(6, endX - startX)
 
             ZStack(alignment: .leading) {
-                Capsule()
-                    .fill(Color.black.opacity(0.10))
-
+                Capsule().fill(Color.black.opacity(0.10))
                 Capsule()
                     .fill(Color.black.opacity(0.35))
                     .frame(width: barW)

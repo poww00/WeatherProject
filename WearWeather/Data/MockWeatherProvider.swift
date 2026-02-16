@@ -25,61 +25,43 @@ final class MockWeatherProvider: WeatherProviding {
         case .warmClear:
             current = WeatherModel(
                 temperature: 27, condition: .clear, highTemperature: 29, lowTemperature: 21,
-                feelsLike: 29,
-                humidity: 0.48,
-                windSpeed: 2.1,
-                windDirection: 120,
-                precipitationChance: 0.05
+                feelsLike: 29, humidity: 0.48, windSpeed: 2.1, windDirection: 120, precipitationChance: 0.05,
+                aqi: 38, pm25: 8
             )
 
         case .mildCloudy:
             current = WeatherModel(
                 temperature: 18, condition: .cloudy, highTemperature: 20, lowTemperature: 14,
-                feelsLike: 17,
-                humidity: 0.62,
-                windSpeed: 3.4,
-                windDirection: 40,
-                precipitationChance: 0.20
+                feelsLike: 17, humidity: 0.62, windSpeed: 3.4, windDirection: 40, precipitationChance: 0.20,
+                aqi: 72, pm25: 22
             )
 
         case .rainy:
             current = WeatherModel(
                 temperature: 16, condition: .rain, highTemperature: 17, lowTemperature: 12,
-                feelsLike: 15,
-                humidity: 0.86,
-                windSpeed: 4.9,
-                windDirection: 190,
-                precipitationChance: 0.75
+                feelsLike: 15, humidity: 0.86, windSpeed: 4.9, windDirection: 190, precipitationChance: 0.75,
+                aqi: 96, pm25: 30
             )
 
         case .snowy:
             current = WeatherModel(
                 temperature: -1, condition: .snow, highTemperature: 0, lowTemperature: -6,
-                feelsLike: -4,
-                humidity: 0.70,
-                windSpeed: 5.2,
-                windDirection: 320,
-                precipitationChance: 0.55
+                feelsLike: -4, humidity: 0.70, windSpeed: 5.2, windDirection: 320, precipitationChance: 0.55,
+                aqi: 118, pm25: 42
             )
 
         case .stormy:
             current = WeatherModel(
                 temperature: 12, condition: .storm, highTemperature: 13, lowTemperature: 8,
-                feelsLike: 10,
-                humidity: 0.90,
-                windSpeed: 9.8,
-                windDirection: 250,
-                precipitationChance: 0.90
+                feelsLike: 10, humidity: 0.90, windSpeed: 9.8, windDirection: 250, precipitationChance: 0.90,
+                aqi: 165, pm25: 68
             )
 
         case .random:
             current = WeatherModel(
                 temperature: 20, condition: .cloudy, highTemperature: 22, lowTemperature: 16,
-                feelsLike: 19,
-                humidity: 0.55,
-                windSpeed: 2.8,
-                windDirection: 80,
-                precipitationChance: 0.15
+                feelsLike: 19, humidity: 0.55, windSpeed: 2.8, windDirection: 80, precipitationChance: 0.15,
+                aqi: 55, pm25: 15
             )
         }
 
