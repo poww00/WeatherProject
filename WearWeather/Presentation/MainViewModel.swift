@@ -10,7 +10,7 @@ final class MainViewModel: ObservableObject {
     @Published var weather: WeatherModel?
     @Published var outfit: ClothingModel = .default
     @Published var hourly: [HourlyForecastItem] = []
-    @Published var daily: [DailyForecastItem] = []       // ✅ 추가
+    @Published var daily: [DailyForecastItem] = []
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
 
@@ -23,15 +23,15 @@ final class MainViewModel: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
 
     // MARK: - Cache
-    private let cacheKey = "WearWeather.cache.v3"         // ✅ 버전 업
-    private let cacheTTL: TimeInterval = 15 * 60 // 15분
+    private let cacheKey = "WearWeather.cache.v4"   // ✅ v4
+    private let cacheTTL: TimeInterval = 15 * 60    // 15분
 
     struct CachePayload: Codable {
         let savedAt: TimeInterval
         let locationName: String
         let weather: WeatherModel
         let outfit: ClothingModel
-        let daily: [DailyForecastItem]                    // ✅ 추가
+        let daily: [DailyForecastItem]
     }
 
     init() {
@@ -88,6 +88,7 @@ final class MainViewModel: ObservableObject {
             )
             self.outfit = recommended
 
+            // (현재 프로젝트는 hourly를 간단 생성)
             self.hourly = makeMockHourly(from: w)
 
             saveCache()
@@ -148,6 +149,7 @@ final class MainViewModel: ObservableObject {
     }
 
     // MARK: - Cache helpers
+
     private func isCacheStillValid() -> Bool {
         guard
             let data = UserDefaults.standard.data(forKey: cacheKey),
@@ -170,6 +172,7 @@ final class MainViewModel: ObservableObject {
         self.weather = payload.weather
         self.outfit = payload.outfit
         self.daily = payload.daily
+
         self.hourly = makeMockHourly(from: payload.weather)
     }
 

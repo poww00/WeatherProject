@@ -13,7 +13,7 @@ struct MainView: View {
 
                     Spacer().frame(height: 70)
 
-                    // ✅ 캐릭터(가슴: 현재온도 + H/L/상태)
+                    // 캐릭터(가슴: 현재온도 + H/L/상태)
                     OutfitAvatarView(
                         outfit: vm.outfit,
                         temperatureText: vm.weather?.tempString ?? "--°",
@@ -21,27 +21,9 @@ struct MainView: View {
                     )
                     .padding(.bottom, 10)
 
-                    // ✅ 섹션 간격 확보 (캐릭터 ↔ 아래 카드)
                     Spacer().frame(height: 6)
 
-                    // ✅ 오늘 코디(디버그용)
-                    #if DEBUG
-                    sectionCard(title: "오늘 코디(디버그)", trailing: {
-                        if vm.isLoading { ProgressView() }
-                    }) {
-                        WrapTags(tags: outfitTags(vm.outfit))
-
-                        if let err = vm.errorMessage {
-                            Text(err)
-                                .font(.footnote)
-                                .foregroundColor(.red)
-                                .padding(.top, 6)
-                        }
-                    }
-                    .padding(.horizontal)
-                    #endif
-
-                    // ✅ Hourly Forecast
+                    // Hourly Forecast
                     sectionCard(title: "Hourly Forecast") {
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 12) {
@@ -59,7 +41,7 @@ struct MainView: View {
                     }
                     .padding(.horizontal)
 
-                    // ✅ Daily Forecast(7일) — UI 개선 핵심
+                    // Daily Forecast
                     sectionCard(title: "Daily Forecast") {
                         if vm.daily.isEmpty {
                             VStack(spacing: 10) {
@@ -73,6 +55,12 @@ struct MainView: View {
                         } else {
                             DailyForecastList(daily: vm.daily)
                         }
+                    }
+                    .padding(.horizontal)
+
+                    // ✅ Weather Details (NEW)
+                    sectionCard(title: "Weather Details") {
+                        WeatherDetailsGrid(weather: vm.weather)
                     }
                     .padding(.horizontal)
 
@@ -132,16 +120,6 @@ struct MainView: View {
         }
     }
 
-    private func outfitTags(_ outfit: ClothingModel) -> [String] {
-        var tags: [String] = []
-        tags.append("상의: \(outfit.top)")
-        tags.append("하의: \(outfit.bottom)")
-        if let outer = outfit.outer { tags.append("아우터: \(outer)") }
-        if let acc = outfit.accessory { tags.append("악세서리: \(acc)") }
-        if outfit.hasMask { tags.append("마스크") }
-        return tags
-    }
-
     private func symbolName(for c: WeatherModel.WeatherCondition) -> String {
         switch c {
         case .clear: return "sun.max.fill"
@@ -152,11 +130,10 @@ struct MainView: View {
         }
     }
 
-    // MARK: - UI blocks
+    // MARK: - Card Style (기존 톤 유지)
 
-    private func sectionCard<Content: View, Trailing: View>(
+    private func sectionCard<Content: View>(
         title: String,
-        @ViewBuilder trailing: () -> Trailing,
         @ViewBuilder content: () -> Content
     ) -> some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -164,10 +141,7 @@ struct MainView: View {
                 Text(title)
                     .font(.headline)
                     .foregroundColor(.black.opacity(0.85))
-
                 Spacer()
-
-                trailing()
             }
 
             content()
@@ -177,12 +151,70 @@ struct MainView: View {
         .cornerRadius(20)
         .shadow(color: Color.black.opacity(0.06), radius: 10, x: 0, y: 6)
     }
+}
 
-    private func sectionCard<Content: View>(
-        title: String,
-        @ViewBuilder content: () -> Content
-    ) -> some View {
-        sectionCard(title: title, trailing: { EmptyView() }, content: content)
+// MARK: - Weather Details Grid
+
+private struct WeatherDetailsGrid: View {
+    let weather: WeatherModel?
+
+    private let columns = [
+        GridItem(.flexible(), spacing: 12),
+        GridItem(.flexible(), spacing: 12)
+    ]
+
+    var body: some View {
+        LazyVGrid(columns: columns, alignment: .leading, spacing: 12) {
+            detailCell(
+                icon: "thermometer.medium",
+                title: "체감온도",
+                value: weather?.feelsLikeString ?? "--"
+            )
+
+            detailCell(
+                icon: "drop.fill",
+                title: "습도",
+                value: weather?.humidityString ?? "--"
+            )
+
+            detailCell(
+                icon: "wind",
+                title: "바람",
+                value: weather?.windString ?? "--"
+            )
+
+            detailCell(
+                icon: "umbrella.fill",
+                title: "강수확률",
+                value: weather?.precipChanceString ?? "--"
+            )
+        }
+    }
+
+    private func detailCell(icon: String, title: String, value: String) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: icon)
+                .font(.title3)
+                .frame(width: 26)
+                .foregroundColor(.black.opacity(0.75))
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.caption)
+                    .foregroundColor(.black.opacity(0.55))
+                Text(value)
+                    .font(.headline)
+                    .foregroundColor(.black.opacity(0.85))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 12)
+        .background(Color.black.opacity(0.04))
+        .cornerRadius(16)
     }
 }
 
@@ -220,13 +252,8 @@ private struct HourlyCard: View {
 private struct DailyForecastList: View {
     let daily: [DailyForecastItem]
 
-    private var globalMin: Double {
-        daily.map { $0.lowTemperature }.min() ?? 0
-    }
-
-    private var globalMax: Double {
-        daily.map { $0.highTemperature }.max() ?? 0
-    }
+    private var globalMin: Double { daily.map { $0.lowTemperature }.min() ?? 0 }
+    private var globalMax: Double { daily.map { $0.highTemperature }.max() ?? 0 }
 
     var body: some View {
         VStack(spacing: 10) {
@@ -264,19 +291,16 @@ private struct DailyForecastRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            // 요일
             Text(dayText)
                 .font(.headline)
                 .foregroundColor(.black.opacity(0.85))
                 .frame(width: 44, alignment: .leading)
 
-            // 아이콘
             Image(systemName: symbol)
                 .font(.title3)
                 .foregroundColor(.black.opacity(0.75))
                 .frame(width: 24)
 
-            // 막대(최저~최고)
             TemperatureBar(
                 low: low,
                 high: high,
@@ -285,7 +309,6 @@ private struct DailyForecastRow: View {
             )
             .frame(height: 10)
 
-            // H/L 숫자
             VStack(alignment: .trailing, spacing: 2) {
                 Text("H \(Int(high))°")
                     .font(.subheadline)
@@ -328,29 +351,6 @@ private struct TemperatureBar: View {
                     .fill(Color.black.opacity(0.35))
                     .frame(width: barW)
                     .offset(x: startX)
-            }
-        }
-    }
-}
-
-// MARK: - Tags UI
-
-private struct WrapTags: View {
-    let tags: [String]
-
-    private let columns = [
-        GridItem(.adaptive(minimum: 90), spacing: 8)
-    ]
-
-    var body: some View {
-        LazyVGrid(columns: columns, alignment: .leading, spacing: 8) {
-            ForEach(tags, id: \.self) { tag in
-                Text(tag)
-                    .font(.subheadline)
-                    .padding(.vertical, 6)
-                    .padding(.horizontal, 10)
-                    .background(Color.black.opacity(0.06))
-                    .cornerRadius(999)
             }
         }
     }
