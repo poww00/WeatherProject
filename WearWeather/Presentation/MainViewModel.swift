@@ -1,6 +1,7 @@
 import Foundation
 import Combine
 import CoreLocation
+import WidgetKit
 
 @MainActor
 final class MainViewModel: ObservableObject {
@@ -61,8 +62,7 @@ final class MainViewModel: ObservableObject {
     private func refreshWeather(using location: CLLocation?, force: Bool) async {
         if !force, isCacheStillValid() {
             if let w = weather { self.hourly = makeMockHourly(from: w) }
-            // 캐시로 들어온 경우에도 위젯 스냅샷 동기화(안전)
-            saveWidgetSnapshotIfPossible()
+            saveWidgetSnapshotAndReload()
             return
         }
 
@@ -92,9 +92,7 @@ final class MainViewModel: ObservableObject {
             self.hourly = makeMockHourly(from: w)
 
             saveCache()
-
-            // ✅ refresh 성공 시점에 위젯 스냅샷 저장
-            saveWidgetSnapshotIfPossible()
+            saveWidgetSnapshotAndReload()
 
         } catch {
             let ns = error as NSError
@@ -104,7 +102,8 @@ final class MainViewModel: ObservableObject {
         isLoading = false
     }
 
-    private func saveWidgetSnapshotIfPossible() {
+    // ✅ App Group 저장 + 위젯 즉시 갱신
+    private func saveWidgetSnapshotAndReload() {
         guard let w = weather else { return }
 
         let snap = WidgetSnapshot.make(
@@ -118,6 +117,9 @@ final class MainViewModel: ObservableObject {
             key: AppConfig.widgetSnapshotKey,
             suiteName: AppConfig.appGroupId
         )
+
+        // 위젯 즉시 갱신(반영이 느릴 때 매우 도움)
+        WidgetCenter.shared.reloadAllTimelines()
     }
 
     private func makeMockHourly(from weather: WeatherModel) -> [HourlyForecastItem] {
@@ -190,8 +192,7 @@ final class MainViewModel: ObservableObject {
         self.isBadAir = payload.isBadAir
         self.hourly = makeMockHourly(from: payload.weather)
 
-        // ✅ 캐시로 들어와도 위젯 스냅샷 동기화
-        saveWidgetSnapshotIfPossible()
+        saveWidgetSnapshotAndReload()
     }
 
     private func saveCache() {

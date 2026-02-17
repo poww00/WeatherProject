@@ -7,7 +7,7 @@ enum AppConfig {
 
     /// ✅ 너가 직접 바꿔야 하는 값
     /// Xcode -> Signing & Capabilities -> App Groups 에 있는 그 ID랑 똑같이 맞춰야 함
-    static let appGroupId: String = "group.com.poww00.WearWeather"
+    static let appGroupId: String = "group.ClothWeather.WearWeathe"
 
     /// 위젯 스냅샷 저장 키(버전 올리고 싶으면 v1→v2)
     static let widgetSnapshotKey: String = "WearWeather.widgetSnapshot.v1"

@@ -6,6 +6,12 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		E105E5792F44E86000A886B8 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E105E5782F44E85F00A886B8 /* WidgetKit.framework */; };
+		E105E57B2F44E86000A886B8 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E105E57A2F44E86000A886B8 /* SwiftUI.framework */; };
+		E105E5862F44E86200A886B8 /* WearWeatherWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = E105E5762F44E85F00A886B8 /* WearWeatherWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		E101783E2F02844600D318B0 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -21,13 +27,68 @@
 			remoteGlobalIDString = E101782F2F02844400D318B0;
 			remoteInfo = WearWeather;
 		};
+		E105E5842F44E86200A886B8 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = E10178282F02844400D318B0 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = E105E5752F44E85F00A886B8;
+			remoteInfo = WearWeatherWidgetExtension;
+		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		E105E58B2F44E86200A886B8 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				E105E5862F44E86200A886B8 /* WearWeatherWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		E10178302F02844400D318B0 /* WearWeather.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WearWeather.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E101783D2F02844600D318B0 /* WearWeatherTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WearWeatherTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		E10178472F02844600D318B0 /* WearWeatherUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WearWeatherUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		E105E5762F44E85F00A886B8 /* WearWeatherWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = WearWeatherWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		E105E5782F44E85F00A886B8 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		E105E57A2F44E86000A886B8 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		E1B518E82F44FE8A0035760D /* WearWeatherWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = WearWeatherWidgetExtension.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		E105E5872F44E86200A886B8 /* Exceptions for "WearWeatherWidget" folder in "WearWeatherWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = E105E5752F44E85F00A886B8 /* WearWeatherWidgetExtension */;
+		};
+		E105E58E2F44ED2C00A886B8 /* Exceptions for "WearWeather" folder in "WearWeatherWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Presentation/OutfitAvatarView.swift,
+				Shared/AppConfig.swift,
+				Shared/Models/ClothingModel.swift,
+				Shared/Models/WeatherModel.swift,
+				Shared/Models/WidgetSnapshot.swift,
+				Shared/Storage/AppGroupStore.swift,
+			);
+			target = E105E5752F44E85F00A886B8 /* WearWeatherWidgetExtension */;
+		};
+		E105E5952F44EE5900A886B8 /* Exceptions for "WearWeatherWidget" folder in "WearWeather" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Provider.swift,
+				WearWeatherWidgetView.swift,
+			);
+			target = E101782F2F02844400D318B0 /* WearWeather */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		E10178402F02844600D318B0 /* WearWeatherTests */ = {
@@ -40,8 +101,20 @@
 			path = WearWeatherUITests;
 			sourceTree = "<group>";
 		};
+		E105E57C2F44E86000A886B8 /* WearWeatherWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				E105E5952F44EE5900A886B8 /* Exceptions for "WearWeatherWidget" folder in "WearWeather" target */,
+				E105E5872F44E86200A886B8 /* Exceptions for "WearWeatherWidget" folder in "WearWeatherWidgetExtension" target */,
+			);
+			path = WearWeatherWidget;
+			sourceTree = "<group>";
+		};
 		E19960E62F028ADD001DBC44 /* WearWeather */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				E105E58E2F44ED2C00A886B8 /* Exceptions for "WearWeather" folder in "WearWeatherWidgetExtension" target */,
+			);
 			path = WearWeather;
 			sourceTree = "<group>";
 		};
@@ -69,14 +142,26 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		E105E5732F44E85F00A886B8 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E105E57B2F44E86000A886B8 /* SwiftUI.framework in Frameworks */,
+				E105E5792F44E86000A886B8 /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		E10178272F02844400D318B0 = {
 			isa = PBXGroup;
 			children = (
+				E1B518E82F44FE8A0035760D /* WearWeatherWidgetExtension.entitlements */,
 				E10178402F02844600D318B0 /* WearWeatherTests */,
 				E101784A2F02844600D318B0 /* WearWeatherUITests */,
+				E105E57C2F44E86000A886B8 /* WearWeatherWidget */,
+				E105E5772F44E85F00A886B8 /* Frameworks */,
 				E10178312F02844400D318B0 /* Products */,
 				E19960E62F028ADD001DBC44 /* WearWeather */,
 			);
@@ -88,8 +173,18 @@
 				E10178302F02844400D318B0 /* WearWeather.app */,
 				E101783D2F02844600D318B0 /* WearWeatherTests.xctest */,
 				E10178472F02844600D318B0 /* WearWeatherUITests.xctest */,
+				E105E5762F44E85F00A886B8 /* WearWeatherWidgetExtension.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		E105E5772F44E85F00A886B8 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				E105E5782F44E85F00A886B8 /* WidgetKit.framework */,
+				E105E57A2F44E86000A886B8 /* SwiftUI.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -102,10 +197,12 @@
 				E101782C2F02844400D318B0 /* Sources */,
 				E101782D2F02844400D318B0 /* Frameworks */,
 				E101782E2F02844400D318B0 /* Resources */,
+				E105E58B2F44E86200A886B8 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				E105E5852F44E86200A886B8 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				E19960E62F028ADD001DBC44 /* WearWeather */,
@@ -163,6 +260,28 @@
 			productReference = E10178472F02844600D318B0 /* WearWeatherUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
+		E105E5752F44E85F00A886B8 /* WearWeatherWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E105E5882F44E86200A886B8 /* Build configuration list for PBXNativeTarget "WearWeatherWidgetExtension" */;
+			buildPhases = (
+				E105E5722F44E85F00A886B8 /* Sources */,
+				E105E5732F44E85F00A886B8 /* Frameworks */,
+				E105E5742F44E85F00A886B8 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				E105E57C2F44E86000A886B8 /* WearWeatherWidget */,
+			);
+			name = WearWeatherWidgetExtension;
+			packageProductDependencies = (
+			);
+			productName = WearWeatherWidgetExtension;
+			productReference = E105E5762F44E85F00A886B8 /* WearWeatherWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -184,6 +303,9 @@
 						CreatedOnToolsVersion = 26.2;
 						TestTargetID = E101782F2F02844400D318B0;
 					};
+					E105E5752F44E85F00A886B8 = {
+						CreatedOnToolsVersion = 26.2;
+					};
 				};
 			};
 			buildConfigurationList = E101782B2F02844400D318B0 /* Build configuration list for PBXProject "WearWeather" */;
@@ -204,6 +326,7 @@
 				E101782F2F02844400D318B0 /* WearWeather */,
 				E101783C2F02844600D318B0 /* WearWeatherTests */,
 				E10178462F02844600D318B0 /* WearWeatherUITests */,
+				E105E5752F44E85F00A886B8 /* WearWeatherWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -224,6 +347,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		E10178452F02844600D318B0 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E105E5742F44E85F00A886B8 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -254,6 +384,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		E105E5722F44E85F00A886B8 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -266,6 +403,11 @@
 			isa = PBXTargetDependency;
 			target = E101782F2F02844400D318B0 /* WearWeather */;
 			targetProxy = E10178482F02844600D318B0 /* PBXContainerItemProxy */;
+		};
+		E105E5852F44E86200A886B8 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = E105E5752F44E85F00A886B8 /* WearWeatherWidgetExtension */;
+			targetProxy = E105E5842F44E86200A886B8 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -394,8 +536,10 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = WearWeather/WearWeather.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 8P3JFLNDTS;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "날씨 추천을 위해 위치 정보가 필요합니다";
@@ -426,8 +570,10 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = WearWeather/WearWeather.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 8P3JFLNDTS;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "날씨 추천을 위해 위치 정보가 필요합니다";
@@ -533,6 +679,72 @@
 			};
 			name = Release;
 		};
+		E105E5892F44E86200A886B8 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = WearWeatherWidgetExtension.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = WearWeatherWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = WearWeatherWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ClothWeather.WearWeather.WearWeatherWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		E105E58A2F44E86200A886B8 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = WearWeatherWidgetExtension.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = WearWeatherWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = WearWeatherWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ClothWeather.WearWeather.WearWeatherWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -568,6 +780,15 @@
 			buildConfigurations = (
 				E10178582F02844600D318B0 /* Debug */,
 				E10178592F02844600D318B0 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		E105E5882F44E86200A886B8 /* Build configuration list for PBXNativeTarget "WearWeatherWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E105E5892F44E86200A886B8 /* Debug */,
+				E105E58A2F44E86200A886B8 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
