@@ -10,6 +10,12 @@ struct WearWeatherWidget: Widget {
         }
         .configurationDisplayName("WearWeather")
         .description("현재 날씨와 코디를 한눈에 보여줘.")
-        .supportedFamilies([.systemSmall, .accessoryRectangular])
+        .supportedFamilies([
+            .systemSmall,
+            .systemMedium,              // ✅ 추가
+            .accessoryRectangular,
+            .accessoryCircular,
+            .accessoryInline
+        ])
     }
 }

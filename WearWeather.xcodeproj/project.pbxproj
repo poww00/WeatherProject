@@ -84,6 +84,7 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Provider.swift,
+				WearWeatherEntry.swift,
 				WearWeatherWidgetView.swift,
 			);
 			target = E101782F2F02844400D318B0 /* WearWeather */;
