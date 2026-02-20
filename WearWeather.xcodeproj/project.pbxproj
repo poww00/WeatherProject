@@ -83,6 +83,7 @@
 		E105E5952F44EE5900A886B8 /* Exceptions for "WearWeatherWidget" folder in "WearWeather" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				OutfitAvatarWidgetView.swift,
 				Provider.swift,
 				WearWeatherEntry.swift,
 				WearWeatherWidgetView.swift,
