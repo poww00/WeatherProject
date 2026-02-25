@@ -4,8 +4,12 @@ struct MainView: View {
 
     @StateObject private var vm = MainViewModel()
 
+    #if DEBUG
+    @State private var showDebugPanel: Bool = false
+    #endif
+
     var body: some View {
-        ZStack {
+        let content = ZStack {
             AppBackgroundView(condition: vm.weather?.condition)
 
             ScrollView(showsIndicators: false) {
@@ -20,14 +24,11 @@ struct MainView: View {
                     )
                     .padding(.bottom, 10)
 
-                    Spacer().frame(height: 6)
-
-                    // Hourly Forecast
                     sectionCard(title: "Hourly Forecast") {
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 12) {
-                                ForEach(vm.hourly) { item in
-                                    HourlyCard(
+                                ForEach(Array(vm.hourly.enumerated()), id: \.offset) { _, item in
+                                    WW_HourlyCard(
                                         hourText: item.hourText,
                                         symbol: symbolName(for: item.condition),
                                         temp: item.temperature
@@ -40,32 +41,18 @@ struct MainView: View {
                     }
                     .padding(.horizontal)
 
-                    // Daily Forecast
                     sectionCard(title: "Daily Forecast") {
-                        if vm.daily.isEmpty {
-                            VStack(spacing: 10) {
-                                ProgressView()
-                                Text("주간 예보 불러오는 중…")
-                                    .foregroundColor(.black.opacity(0.55))
-                                    .font(.subheadline)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 16)
-                        } else {
-                            DailyForecastList(daily: vm.daily)
-                        }
+                        WW_DailyForecastList(daily: vm.daily)
                     }
                     .padding(.horizontal)
 
-                    // Weather Details
                     sectionCard(title: "Weather Details") {
-                        WeatherDetailsGrid(weather: vm.weather)
+                        WW_WeatherDetailsGrid(weather: vm.weather)
                     }
                     .padding(.horizontal)
 
-                    // ✅ Air Quality
                     sectionCard(title: "Air Quality") {
-                        AirQualityRow(weather: vm.weather)
+                        WW_AirQualityRow(weather: vm.weather)
                     }
                     .padding(.horizontal)
 
@@ -73,7 +60,7 @@ struct MainView: View {
                 }
                 .padding(.bottom, 24)
             }
-            .modifier(AlwaysBounceIfPossible())
+            .modifier(WW_AlwaysBounceIfPossible())
             .safeAreaInset(edge: .top) {
                 header
                     .padding(.horizontal)
@@ -83,18 +70,44 @@ struct MainView: View {
                     .zIndex(999)
             }
         }
+
+        #if DEBUG
+        return AnyView(
+            content.sheet(isPresented: $showDebugPanel) {
+                WW_DebugScenarioSheet(vm: vm)
+            }
+        )
+        #else
+        return AnyView(content)
+        #endif
     }
 
+    // MARK: - Header
+
     private var header: some View {
-        HStack {
+        HStack(spacing: 10) {
             Image(systemName: "mappin.and.ellipse")
                 .font(.title2)
                 .foregroundColor(.white)
 
+            // ✅ Release 빌드에서는 디버그 제스처/배지를 아예 노출하지 않음
+            #if DEBUG
             Text(vm.locationName)
                 .font(.title3)
                 .bold()
                 .foregroundColor(.white)
+                .onLongPressGesture(minimumDuration: 0.6) {
+                    guard AppConfig.useMockWeather else { return }
+                    showDebugPanel = true
+                }
+
+            debugModeBadge
+            #else
+            Text(vm.locationName)
+                .font(.title3)
+                .bold()
+                .foregroundColor(.white)
+            #endif
 
             Spacer()
 
@@ -105,6 +118,41 @@ struct MainView: View {
             }
         }
     }
+
+    #if DEBUG
+    private var debugModeBadge: some View {
+        Group {
+            guard AppConfig.useMockWeather else { return AnyView(EmptyView()) }
+
+            let text: String
+            if let s = vm.debugScenarioOverride {
+                text = "LOCK: \(s.title)"
+            } else {
+                text = "AUTO"
+            }
+
+            return AnyView(
+                Text(text)
+                    .font(.caption2.weight(.semibold))
+                    .foregroundColor(.white.opacity(0.92))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(
+                        Capsule(style: .continuous)
+                            .fill(Color.white.opacity(0.16))
+                    )
+                    .overlay(
+                        Capsule(style: .continuous)
+                            .stroke(Color.white.opacity(0.18), lineWidth: 0.6)
+                    )
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+            )
+        }
+    }
+    #endif
+
+    // MARK: - Helpers
 
     private func summaryLine() -> String? {
         guard let w = vm.weather else { return nil }
@@ -131,7 +179,6 @@ struct MainView: View {
         }
     }
 
-    // Card style (톤 동일)
     private func sectionCard<Content: View>(
         title: String,
         @ViewBuilder content: () -> Content
@@ -153,9 +200,148 @@ struct MainView: View {
     }
 }
 
-// MARK: - Air Quality UI
+#if DEBUG
+// MARK: - Debug Sheet (DEBUG 빌드에서만 컴파일)
 
-private struct AirQualityRow: View {
+private struct WW_DebugScenarioSheet: View {
+    @ObservedObject var vm: MainViewModel
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var selected: WearWeatherMockPipeline.Scenario = .rainy
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section(header: Text("Mock Scenario 고정")) {
+                    if let current = vm.debugScenarioOverride {
+                        HStack {
+                            Text("현재 고정")
+                            Spacer()
+                            Text(current.title).bold()
+                        }
+                    } else {
+                        Text("현재: 자동(시간 기반)")
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Picker("시나리오", selection: $selected) {
+                        ForEach(WearWeatherMockPipeline.Scenario.allCases) { s in
+                            Text(s.title).tag(s)
+                        }
+                    }
+                }
+
+                Section {
+                    Button {
+                        vm.setMockScenarioOverride(selected)
+                    } label: {
+                        Text("선택한 시나리오로 고정")
+                    }
+
+                    Button(role: .destructive) {
+                        vm.clearMockScenarioOverride()
+                    } label: {
+                        Text("고정 해제(자동으로)")
+                    }
+                }
+
+                Section(footer: Text("※ Debug 빌드 전용 기능. Release/TestFlight/App Store에서는 노출되지 않음.")) {
+                    EmptyView()
+                }
+            }
+            .navigationTitle("Debug")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("닫기") { dismiss() }
+                }
+            }
+            .onAppear {
+                selected = vm.debugScenarioOverride ?? WearWeatherMockPipeline.currentScenario()
+            }
+        }
+    }
+}
+#endif
+
+// MARK: - Local UI Components (프로젝트 의존성 제거용)
+
+private struct WW_HourlyCard: View {
+    let hourText: String
+    let symbol: String
+    let temp: Int
+
+    var body: some View {
+        VStack(spacing: 10) {
+            Text(hourText)
+                .font(.caption)
+                .foregroundColor(.black.opacity(0.60))
+
+            Image(systemName: symbol)
+                .font(.title3)
+                .foregroundColor(.black.opacity(0.75))
+
+            Text("\(temp)°")
+                .font(.headline)
+                .foregroundColor(.black.opacity(0.85))
+                .monospacedDigit()
+        }
+        .frame(width: 72, height: 110)
+        .background(Color.white.opacity(0.95))
+        .cornerRadius(16)
+        .shadow(color: Color.black.opacity(0.05), radius: 6, x: 0, y: 4)
+    }
+}
+
+private struct WW_DailyForecastList: View {
+    let daily: [DailyForecastItem]
+
+    var body: some View {
+        if daily.isEmpty {
+            VStack(spacing: 10) {
+                ProgressView()
+                Text("주간 예보 불러오는 중…")
+                    .foregroundColor(.black.opacity(0.55))
+                    .font(.subheadline)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 16)
+        } else {
+            VStack(spacing: 10) {
+                ForEach(Array(daily.enumerated()), id: \.offset) { _, d in
+                    HStack {
+                        Text(WW_DateFormat.dayString(d.date))
+                            .font(.subheadline)
+                            .foregroundColor(.black.opacity(0.70))
+                            .frame(width: 52, alignment: .leading)
+
+                        Image(systemName: WW_Symbol.symbolName(for: d.condition))
+                            .foregroundColor(.black.opacity(0.70))
+                            .frame(width: 22)
+
+                        Spacer()
+
+                        Text("H \(Int(d.highTemperature))°")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundColor(.black.opacity(0.80))
+                            .monospacedDigit()
+
+                        Text("L \(Int(d.lowTemperature))°")
+                            .font(.subheadline)
+                            .foregroundColor(.black.opacity(0.60))
+                            .monospacedDigit()
+                            .frame(width: 54, alignment: .trailing)
+                    }
+                    .padding(.vertical, 10)
+                    .padding(.horizontal, 12)
+                    .background(Color.black.opacity(0.04))
+                    .cornerRadius(14)
+                }
+            }
+        }
+    }
+}
+
+private struct WW_AirQualityRow: View {
     let weather: WeatherModel?
 
     var body: some View {
@@ -201,9 +387,7 @@ private struct AirQualityRow: View {
     }
 }
 
-// MARK: - Weather Details Grid
-
-private struct WeatherDetailsGrid: View {
+private struct WW_WeatherDetailsGrid: View {
     let weather: WeatherModel?
 
     private let columns = [
@@ -213,93 +397,38 @@ private struct WeatherDetailsGrid: View {
 
     var body: some View {
         LazyVGrid(columns: columns, alignment: .leading, spacing: 12) {
-            detailCell(icon: "thermometer.medium", title: "체감온도", value: weather?.feelsLikeString ?? "--")
-            detailCell(icon: "drop.fill", title: "습도", value: weather?.humidityString ?? "--")
-            detailCell(icon: "wind", title: "바람", value: weather?.windString ?? "--")
-            detailCell(icon: "umbrella.fill", title: "강수확률", value: weather?.precipChanceString ?? "--")
+            cell(icon: "thermometer.medium", title: "체감온도", value: weather?.feelsLikeString ?? "--")
+            cell(icon: "drop.fill", title: "습도", value: weather?.humidityString ?? "--")
+            cell(icon: "wind", title: "바람", value: weather?.windString ?? "--")
+            cell(icon: "umbrella.fill", title: "강수확률", value: weather?.precipChanceString ?? "--")
         }
     }
 
-    private func detailCell(icon: String, title: String, value: String) -> some View {
+    private func cell(icon: String, title: String, value: String) -> some View {
         HStack(spacing: 10) {
             Image(systemName: icon)
-                .font(.title3)
-                .frame(width: 26)
-                .foregroundColor(.black.opacity(0.75))
+                .foregroundColor(.black.opacity(0.70))
+                .frame(width: 28)
 
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(title)
                     .font(.caption)
                     .foregroundColor(.black.opacity(0.55))
                 Text(value)
                     .font(.headline)
                     .foregroundColor(.black.opacity(0.85))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
             }
 
-            Spacer(minLength: 0)
+            Spacer()
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 12)
+        .padding(12)
         .background(Color.black.opacity(0.04))
         .cornerRadius(16)
     }
 }
 
-// MARK: - Hourly Card
-
-private struct HourlyCard: View {
-    let hourText: String
-    let symbol: String
-    let temp: Int
-
-    var body: some View {
-        VStack(spacing: 10) {
-            Text(hourText)
-                .font(.subheadline)
-                .foregroundColor(.black.opacity(0.55))
-
-            Image(systemName: symbol)
-                .font(.title2)
-                .foregroundColor(.black.opacity(0.75))
-
-            Text("\(temp)°")
-                .font(.headline)
-                .foregroundColor(.black.opacity(0.85))
-        }
-        .frame(width: 72)
-        .padding(.vertical, 14)
-        .background(Color.white.opacity(0.85))
-        .cornerRadius(18)
-        .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 5)
-    }
-}
-
-// MARK: - Daily Forecast List
-
-private struct DailyForecastList: View {
-    let daily: [DailyForecastItem]
-
-    private var globalMin: Double { daily.map { $0.lowTemperature }.min() ?? 0 }
-    private var globalMax: Double { daily.map { $0.highTemperature }.max() ?? 0 }
-
-    var body: some View {
-        VStack(spacing: 10) {
-            ForEach(daily) { d in
-                DailyForecastRow(
-                    dayText: d.dayText,
-                    symbol: symbolName(for: d.condition),
-                    low: d.lowTemperature,
-                    high: d.highTemperature,
-                    globalMin: globalMin,
-                    globalMax: globalMax
-                )
-            }
-        }
-    }
-
-    private func symbolName(for c: WeatherModel.WeatherCondition) -> String {
+private enum WW_Symbol {
+    static func symbolName(for c: WeatherModel.WeatherCondition) -> String {
         switch c {
         case .clear: return "sun.max.fill"
         case .cloudy: return "cloud.fill"
@@ -310,80 +439,19 @@ private struct DailyForecastList: View {
     }
 }
 
-private struct DailyForecastRow: View {
-    let dayText: String
-    let symbol: String
-    let low: Double
-    let high: Double
-    let globalMin: Double
-    let globalMax: Double
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Text(dayText)
-                .font(.headline)
-                .foregroundColor(.black.opacity(0.85))
-                .frame(width: 44, alignment: .leading)
-
-            Image(systemName: symbol)
-                .font(.title3)
-                .foregroundColor(.black.opacity(0.75))
-                .frame(width: 24)
-
-            TemperatureBar(low: low, high: high, globalMin: globalMin, globalMax: globalMax)
-                .frame(height: 10)
-
-            VStack(alignment: .trailing, spacing: 2) {
-                Text("H \(Int(high))°")
-                    .font(.subheadline)
-                    .foregroundColor(.black.opacity(0.75))
-                Text("L \(Int(low))°")
-                    .font(.subheadline)
-                    .foregroundColor(.black.opacity(0.55))
-            }
-            .frame(width: 64, alignment: .trailing)
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 12)
-        .background(Color.black.opacity(0.04))
-        .cornerRadius(16)
+private enum WW_DateFormat {
+    static func dayString(_ date: Date) -> String {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "ko_KR")
+        f.dateFormat = "E"
+        return f.string(from: date)
     }
 }
 
-private struct TemperatureBar: View {
-    let low: Double
-    let high: Double
-    let globalMin: Double
-    let globalMax: Double
-
-    var body: some View {
-        GeometryReader { geo in
-            let width = geo.size.width
-            let range = max(globalMax - globalMin, 0.1)
-            let startRatio = (low - globalMin) / range
-            let endRatio = (high - globalMin) / range
-
-            let startX = max(0, min(width, width * startRatio))
-            let endX = max(0, min(width, width * endRatio))
-            let barW = max(6, endX - startX)
-
-            ZStack(alignment: .leading) {
-                Capsule().fill(Color.black.opacity(0.10))
-                Capsule()
-                    .fill(Color.black.opacity(0.35))
-                    .frame(width: barW)
-                    .offset(x: startX)
-            }
-        }
-    }
-}
-
-// MARK: - iOS17+ bounce
-
-private struct AlwaysBounceIfPossible: ViewModifier {
+private struct WW_AlwaysBounceIfPossible: ViewModifier {
     func body(content: Content) -> some View {
-        if #available(iOS 17.0, *) {
-            content.scrollBounceBehavior(.always)
+        if #available(iOS 16.0, *) {
+            content.scrollBounceBehavior(.basedOnSize)
         } else {
             content
         }

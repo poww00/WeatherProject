@@ -16,6 +16,9 @@ final class MainViewModel: ObservableObject {
 
     @Published var isBadAir: Bool = false
 
+    /// ✅ (NEW) 현재 mock 시나리오 override
+    @Published var debugScenarioOverride: WearWeatherMockPipeline.Scenario? = nil
+
     private let locationManager = LocationManager()
     private let geocoder = CLGeocoder()
     private let weatherProvider: WeatherProviding
@@ -36,9 +39,17 @@ final class MainViewModel: ObservableObject {
     init() {
         if AppConfig.useMockWeather {
             self.weatherProvider = MockWeatherProvider(style: .random)
-        } else {
-            self.weatherProvider = WeatherManager.shared
+
+            // ✅ 현재 override 로드
+            self.debugScenarioOverride = WearWeatherMockPipeline.getScenarioOverride()
+
+            // ✅ mock 데이터 적용
+            applyMock(now: Date())
+            return
         }
+
+        // 실연동(나중)
+        self.weatherProvider = WeatherManager.shared
 
         loadCacheIfValid()
 
@@ -56,13 +67,65 @@ final class MainViewModel: ObservableObject {
     }
 
     func manualRefresh() {
-        Task { await refreshWeather(using: locationManager.location, force: true) }
+        if AppConfig.useMockWeather {
+            applyMock(now: Date())
+        } else {
+            Task { await refreshWeather(using: locationManager.location, force: true) }
+        }
     }
+
+    // MARK: - Debug Scenario Control (NEW)
+
+    func setMockScenarioOverride(_ scenario: WearWeatherMockPipeline.Scenario) {
+        WearWeatherMockPipeline.setScenarioOverride(scenario)
+        self.debugScenarioOverride = scenario
+        applyMock(now: Date())
+    }
+
+    func clearMockScenarioOverride() {
+        WearWeatherMockPipeline.clearScenarioOverride()
+        self.debugScenarioOverride = nil
+        applyMock(now: Date())
+    }
+
+    // MARK: - Mock Pipeline
+
+    private func applyMock(now: Date) {
+        isLoading = true
+        errorMessage = nil
+
+        let loc = WearWeatherMockPipeline.locationName(now: now)
+        let pkg = WearWeatherMockPipeline.makeWeatherPackage(now: now)
+        let w = pkg.current
+
+        self.locationName = loc
+        self.weather = w
+        self.daily = pkg.daily
+        self.hourly = WearWeatherMockPipeline.makeHourly(now: now, current: w)
+
+        let badAir = w.isBadAir
+        self.isBadAir = badAir
+
+        self.outfit = Stylist.shared.recommendOutfit(
+            temp: w.temperature,
+            condition: w.condition,
+            isBadAir: badAir
+        )
+
+        // App Groups OFF여도 reload는 가능
+        WidgetCenter.shared.reloadAllTimelines()
+
+        isLoading = false
+    }
+
+    // MARK: - Real refresh (미래)
 
     private func refreshWeather(using location: CLLocation?, force: Bool) async {
         if !force, isCacheStillValid() {
-            if let w = weather { self.hourly = makeMockHourly(from: w) }
-            saveWidgetSnapshotAndReload()
+            if let w = weather {
+                self.hourly = WearWeatherMockPipeline.makeHourly(now: Date(), current: w)
+            }
+            WidgetCenter.shared.reloadAllTimelines()
             return
         }
 
@@ -89,10 +152,10 @@ final class MainViewModel: ObservableObject {
             )
             self.outfit = recommended
 
-            self.hourly = makeMockHourly(from: w)
+            self.hourly = WearWeatherMockPipeline.makeHourly(now: Date(), current: w)
 
             saveCache()
-            saveWidgetSnapshotAndReload()
+            WidgetCenter.shared.reloadAllTimelines()
 
         } catch {
             let ns = error as NSError
@@ -100,55 +163,6 @@ final class MainViewModel: ObservableObject {
         }
 
         isLoading = false
-    }
-
-    // ✅ App Group 저장 + 위젯 즉시 갱신
-    private func saveWidgetSnapshotAndReload() {
-        guard let w = weather else { return }
-
-        let snap = WidgetSnapshot.make(
-            locationName: locationName,
-            weather: w,
-            outfit: outfit
-        )
-
-        AppGroupStore.save(
-            snap,
-            key: AppConfig.widgetSnapshotKey,
-            suiteName: AppConfig.appGroupId
-        )
-
-        // 위젯 즉시 갱신(반영이 느릴 때 매우 도움)
-        WidgetCenter.shared.reloadAllTimelines()
-    }
-
-    private func makeMockHourly(from weather: WeatherModel) -> [HourlyForecastItem] {
-        let base = Int(weather.temperature.rounded())
-        let now = Calendar.current.component(.hour, from: Date())
-
-        func tempOffset(_ i: Int) -> Int {
-            let pattern = [-2, -1, 0, 1, 2, 1, 0, -1]
-            return pattern[i % pattern.count]
-        }
-
-        func conditionForHour(_ i: Int) -> WeatherModel.WeatherCondition {
-            switch weather.condition {
-            case .storm: return (i % 3 == 0) ? .storm : .rain
-            case .snow:  return (i % 4 == 0) ? .snow : .cloudy
-            case .rain:  return (i % 4 == 0) ? .rain : .cloudy
-            case .cloudy:return (i % 5 == 0) ? .cloudy : .clear
-            case .clear: return .clear
-            }
-        }
-
-        return (0..<8).map { i in
-            let hour = (now + i + 1) % 24
-            return HourlyForecastItem(
-                hourText: "\(hour)시",
-                temperature: base + tempOffset(i),
-                condition: conditionForHour(i)
-            )
-        }
     }
 
     private func updateLocationName(for location: CLLocation) async {
@@ -190,9 +204,9 @@ final class MainViewModel: ObservableObject {
         self.outfit = payload.outfit
         self.daily = payload.daily
         self.isBadAir = payload.isBadAir
-        self.hourly = makeMockHourly(from: payload.weather)
+        self.hourly = WearWeatherMockPipeline.makeHourly(now: Date(), current: payload.weather)
 
-        saveWidgetSnapshotAndReload()
+        WidgetCenter.shared.reloadAllTimelines()
     }
 
     private func saveCache() {

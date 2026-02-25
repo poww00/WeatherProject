@@ -2,13 +2,20 @@ import Foundation
 
 enum AppConfig {
 
-    /// ✅ mock 사용 여부 (기존에 쓰던 그대로 유지)
+    /// ✅ mock 사용 여부
     static let useMockWeather: Bool = true
 
-    /// ✅ 너가 직접 바꿔야 하는 값
-    /// Xcode -> Signing & Capabilities -> App Groups 에 있는 그 ID랑 똑같이 맞춰야 함
+    /// ✅ App Groups 사용 여부 (오픈 직전까지 OFF)
+    static let useAppGroupForWidget: Bool = false
+
+    /// App Group ID (나중에 ON할 때만 의미 있음)
     static let appGroupId: String = "group.ClothWeather.WearWeathe"
 
-    /// 위젯 스냅샷 저장 키(버전 올리고 싶으면 v1→v2)
+    /// 위젯 스냅샷 저장 키
     static let widgetSnapshotKey: String = "WearWeather.widgetSnapshot.v1"
+
+    /// ✅ (NEW) 디버그 시나리오 override 저장 키
+    /// - App Groups OFF면 앱/위젯이 각각 따로 저장됨(샌드박스 분리)
+    /// - App Groups ON되면 같은 키로 공유 가능
+    static let mockScenarioOverrideKey: String = "WearWeather.mockScenarioOverride.v1"
 }

@@ -71,9 +71,14 @@
 		E105E58E2F44ED2C00A886B8 /* Exceptions for "WearWeather" folder in "WearWeatherWidgetExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				Data/WeatherProviding.swift,
+				Domain/Stylist.swift,
 				Presentation/OutfitAvatarView.swift,
 				Shared/AppConfig.swift,
+				Shared/Mock/WearWeatherMockPipeline.swift,
 				Shared/Models/ClothingModel.swift,
+				Shared/Models/DailyForecastItem.swift,
+				Shared/Models/HourlyForecastItem.swift,
 				Shared/Models/WeatherModel.swift,
 				Shared/Models/WidgetSnapshot.swift,
 				Shared/Storage/AppGroupStore.swift,

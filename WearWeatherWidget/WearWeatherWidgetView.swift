@@ -1,128 +1,175 @@
 import SwiftUI
 import WidgetKit
 
+private struct WidgetHint: Equatable {
+    let emoji: String
+    let text: String
+    var badgeText: String { "\(emoji) \(text)" }
+}
+
 struct WearWeatherWidgetView: View {
     let entry: WearWeatherEntry
-
     @Environment(\.widgetFamily) private var family
 
     var body: some View {
         switch family {
-        case .systemSmall:
-            systemSmallView
-        case .systemMedium:
-            systemMediumView
-        case .accessoryRectangular:
-            accessoryRectangularView
-        case .accessoryCircular:
-            accessoryCircularView
-        case .accessoryInline:
-            accessoryInlineView
-        default:
-            systemSmallView
+        case .systemSmall: systemSmallView
+        case .systemMedium: systemMediumView
+        case .accessoryRectangular: accessoryRectangularView
+        case .accessoryCircular: accessoryCircularView
+        case .accessoryInline: accessoryInlineView
+        default: systemSmallView
         }
     }
 }
 
-// MARK: - Layouts
 private extension WearWeatherWidgetView {
 
-    // 공통 텍스트
-    var temperatureText: String {
-        "\(Int(entry.snapshot.temperature))°"
+    var temperatureText: String { "\(entry.snapshot.temperature)°" }
+    var highLowText: String { "H \(entry.snapshot.highTemperature)°  L \(entry.snapshot.lowTemperature)°" }
+    var summaryText: String { "\(highLowText) · \(entry.snapshot.condition.shortText)" }
+
+    var aqiLineText: String? {
+        guard let aqi = entry.snapshot.aqi else { return nil }
+        return "AQI \(aqi) · \(entry.snapshot.aqiStatusText ?? "--")"
     }
 
-    var summaryText: String {
-        // 예: "H 10° L 2° · 흐림"
-        let h = Int(entry.snapshot.highTemperature)
-        let l = Int(entry.snapshot.lowTemperature)
-        let cond = entry.snapshot.condition.shortText
-        return "H \(h)°  L \(l)° · \(cond)"
+    var isBadAir: Bool {
+        if let aqi = entry.snapshot.aqi { return aqi >= 101 }
+        return entry.snapshot.outfit.hasMask
+    }
+
+    var hint: WidgetHint? {
+        if isBadAir { return WidgetHint(emoji: "😷", text: "마스크") }
+
+        if let acc = entry.snapshot.outfit.accessory {
+            let lower = acc.lowercased()
+            if lower.contains("umbrella") || lower.contains("umb") { return WidgetHint(emoji: "☔️", text: "우산") }
+            if lower.contains("glove") { return WidgetHint(emoji: "🧤", text: "장갑") }
+            if lower.contains("muffler") { return WidgetHint(emoji: "🧣", text: "목도리") }
+            if lower.contains("cap") { return WidgetHint(emoji: "🧢", text: "모자") }
+        }
+
+        switch entry.snapshot.condition {
+        case .rain, .storm: return WidgetHint(emoji: "☔️", text: "우산")
+        case .snow: return WidgetHint(emoji: "🧤", text: "장갑")
+        default: return nil
+        }
+    }
+
+    func badge(text: String, compactText: String? = nil, font: Font = .caption2) -> some View {
+        ViewThatFits(in: .horizontal) {
+            Text(text)
+                .font(font.weight(.semibold))
+                .padding(.horizontal, 8)
+                .padding(.vertical, 3)
+                .background(Capsule(style: .continuous).fill(Color.black.opacity(0.12)))
+                .overlay(Capsule(style: .continuous).stroke(Color.black.opacity(0.10), lineWidth: 0.5))
+
+            if let compactText {
+                Text(compactText)
+                    .font(font.weight(.semibold))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(Capsule(style: .continuous).fill(Color.black.opacity(0.12)))
+                    .overlay(Capsule(style: .continuous).stroke(Color.black.opacity(0.10), lineWidth: 0.5))
+            }
+        }
+        .foregroundStyle(.primary)
     }
 
     // MARK: - systemSmall
-
     var systemSmallView: some View {
-        ZStack {
-            Color.clear
+        GeometryReader { geo in
+            let size = geo.size
+            let minSide = min(size.width, size.height)
 
-            VStack(spacing: 8) {
-                HStack {
+            let outerPadding = max(6, minSide * 0.055)
+            let vSpacing = max(4, minSide * 0.032)
+
+            let headerFontSize = max(11, minSide * 0.082)
+            let tempFontSize = max(22, minSide * 0.275)
+            let summaryFontSize = max(10, minSide * 0.070)
+
+            let hasAQI = (entry.snapshot.aqi != nil)
+            let avatarHeight = max(62, size.height * (hasAQI ? 0.50 : 0.54))
+
+            VStack(spacing: vSpacing) {
+
+                HStack(alignment: .firstTextBaseline) {
                     Text(entry.snapshot.locationName)
-                        .font(.caption)
+                        .font(.system(size: headerFontSize, weight: .semibold))
                         .lineLimit(1)
-                        .minimumScaleFactor(0.8)
+                        .minimumScaleFactor(0.72)
 
-                    Spacer()
+                    Spacer(minLength: 6)
 
                     Text(entry.snapshot.condition.emoji)
-                        .font(.caption)
+                        .font(.system(size: headerFontSize))
                 }
 
-                // ✅ 위젯 전용 캐릭터 뷰 (라벨 텍스트 숨김 + 유동 레이아웃)
-                OutfitAvatarWidgetView(outfit: entry.snapshot.outfit)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .padding(.horizontal, 6)
+                OutfitAvatarWidgetView(outfit: entry.snapshot.outfit, style: .standard)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: avatarHeight)
+                    .padding(.horizontal, max(2, minSide * 0.01))
 
-                // AQI (있으면 표시)
-                if let aqi = entry.snapshot.aqi {
-                    Text("AQI \(aqi) · \(entry.snapshot.aqiStatusText ?? "--")")
-                        .font(.caption2)
-                        .opacity(0.8)
-                        .lineLimit(1)
-                }
-
-                // 온도/요약은 위젯에서 텍스트로 깔끔하게 분리
-                VStack(spacing: 2) {
+                VStack(alignment: .leading, spacing: max(2, minSide * 0.014)) {
                     Text(temperatureText)
-                        .font(.headline)
+                        .font(.system(size: tempFontSize, weight: .heavy, design: .rounded))
+                        .monospacedDigit()
+                        .lineLimit(1)
 
                     Text(summaryText)
-                        .font(.caption2)
-                        .opacity(0.85)
+                        .font(.system(size: summaryFontSize, weight: .semibold))
+                        .opacity(0.86)
                         .lineLimit(1)
-                        .minimumScaleFactor(0.85)
+                        .minimumScaleFactor(0.65)
+
+                    if let aqiLineText {
+                        badge(text: aqiLineText, compactText: "AQI")
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
                 }
             }
-            .padding(10)
+            .padding(outerPadding)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .containerBackground(.fill.tertiary, for: .widget)
     }
 
     // MARK: - systemMedium
-
-    /// systemMedium: 좌측 캐릭터 + 우측 정보 요약
     var systemMediumView: some View {
         HStack(spacing: 12) {
-            OutfitAvatarWidgetView(outfit: entry.snapshot.outfit)
-                .frame(width: 140)
+            OutfitAvatarWidgetView(outfit: entry.snapshot.outfit, style: .standard)
+                .frame(width: 160)
 
             VStack(alignment: .leading, spacing: 6) {
-                HStack {
+
+                HStack(alignment: .firstTextBaseline) {
                     Text(entry.snapshot.locationName)
                         .font(.caption)
                         .lineLimit(1)
-                        .minimumScaleFactor(0.8)
+                        .minimumScaleFactor(0.75)
 
-                    Spacer()
-
-                    Text(entry.snapshot.condition.emoji)
-                        .font(.caption)
+                    Spacer(minLength: 6)
+                    Text(entry.snapshot.condition.emoji).font(.caption)
                 }
 
                 Text(temperatureText)
-                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .font(.system(size: 32, weight: .heavy, design: .rounded))
+                    .monospacedDigit()
+                    .minimumScaleFactor(0.85)
 
                 Text(summaryText)
                     .font(.caption)
-                    .opacity(0.85)
+                    .opacity(0.86)
                     .lineLimit(1)
+                    .minimumScaleFactor(0.78)
 
-                if let aqi = entry.snapshot.aqi {
-                    Text("AQI \(aqi) · \(entry.snapshot.aqiStatusText ?? "--")")
-                        .font(.caption2)
-                        .opacity(0.8)
-                        .lineLimit(1)
+                HStack(spacing: 6) {
+                    if let aqiLineText { badge(text: aqiLineText, compactText: "AQI") }
+                    if let hint { badge(text: hint.badgeText, compactText: hint.emoji) }
+                    Spacer(minLength: 0)
                 }
 
                 Spacer(minLength: 0)
@@ -134,31 +181,41 @@ private extension WearWeatherWidgetView {
     }
 
     // MARK: - accessoryRectangular
-
     var accessoryRectangularView: some View {
         HStack(spacing: 10) {
-            OutfitAvatarWidgetView(outfit: entry.snapshot.outfit)
-                .frame(width: 56, height: 56)
+            OutfitAvatarWidgetView(outfit: entry.snapshot.outfit, style: .standard)
+                .frame(width: 48, height: 48)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(entry.snapshot.locationName)
-                    .font(.caption2)
-                    .lineLimit(1)
-                    .opacity(0.9)
-
-                Text(temperatureText)
-                    .font(.headline)
-
-                Text(summaryText)
-                    .font(.caption2)
-                    .opacity(0.85)
-                    .lineLimit(1)
-
-                if let aqi = entry.snapshot.aqi {
-                    Text("AQI \(aqi) · \(entry.snapshot.aqiStatusText ?? "--")")
-                        .font(.caption2)
-                        .opacity(0.8)
+                HStack(spacing: 6) {
+                    Text(entry.snapshot.locationName)
+                        .font(.caption2.weight(.semibold))
                         .lineLimit(1)
+                        .minimumScaleFactor(0.72)
+                    Spacer(minLength: 6)
+                    Text(entry.snapshot.condition.emoji).font(.caption2)
+                }
+
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(temperatureText)
+                        .font(.headline.weight(.heavy))
+                        .monospacedDigit()
+                        .layoutPriority(2)
+
+                    Text(summaryText)
+                        .font(.caption2)
+                        .opacity(0.85)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.65)
+                        .layoutPriority(1)
+
+                    Spacer(minLength: 6)
+
+                    if isBadAir {
+                        badge(text: "AQI \(entry.snapshot.aqiStatusText ?? "나쁨")", compactText: "AQI")
+                    } else if let hint {
+                        badge(text: hint.badgeText, compactText: hint.emoji)
+                    }
                 }
             }
 
@@ -169,50 +226,51 @@ private extension WearWeatherWidgetView {
         .containerBackground(.fill.tertiary, for: .widget)
     }
 
-    // MARK: - accessoryCircular
-
+    // MARK: - accessoryCircular (✅ 한 번에 고정 완료 버전)
     var accessoryCircularView: some View {
-        ZStack {
-            OutfitAvatarWidgetView(outfit: entry.snapshot.outfit)
-                .padding(6)
+        GeometryReader { geo in
+            let minSide = min(geo.size.width, geo.size.height)
 
-            VStack {
-                Spacer()
+            ZStack(alignment: .bottom) {
+                // ✅ 원형은 "절대 잘림 방지"를 위해 크기를 직접 제어
+                OutfitAvatarWidgetView(outfit: entry.snapshot.outfit, style: .circular)
+                    .frame(width: minSide * 0.92, height: minSide * 0.92)
+                    .position(x: geo.size.width / 2, y: geo.size.height * 0.48)
+
                 Text(temperatureText)
-                    .font(.caption).bold()
-                    .padding(.bottom, 2)
+                    .font(.system(size: max(10, minSide * 0.22), weight: .bold, design: .rounded))
+                    .monospacedDigit()
+                    .padding(.bottom, max(2, minSide * 0.06))
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .containerBackground(.fill.tertiary, for: .widget)
     }
 
     // MARK: - accessoryInline
-
     var accessoryInlineView: some View {
         Text("\(entry.snapshot.locationName) \(temperatureText) \(entry.snapshot.condition.emoji)")
     }
 }
 
-// MARK: - Condition helpers
 private extension WeatherModel.WeatherCondition {
-
     var emoji: String {
         switch self {
-        case .clear:  return "☀️"
-        case .cloudy: return "☁️"
-        case .rain:   return "🌧️"
-        case .snow:   return "❄️"
-        case .storm:  return "⛈️"
+        case .clear: "☀️"
+        case .cloudy: "☁️"
+        case .rain: "🌧️"
+        case .snow: "❄️"
+        case .storm: "⛈️"
         }
     }
 
     var shortText: String {
         switch self {
-        case .clear:  return "맑음"
-        case .cloudy: return "흐림"
-        case .rain:   return "비"
-        case .snow:   return "눈"
-        case .storm:  return "폭풍"
+        case .clear: "맑음"
+        case .cloudy: "흐림"
+        case .rain: "비"
+        case .snow: "눈"
+        case .storm: "폭풍"
         }
     }
 }

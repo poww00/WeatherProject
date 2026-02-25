@@ -1,30 +1,38 @@
 import Foundation
 
-/// App Group UserDefaults에 JSON으로 저장/로드
 enum AppGroupStore {
 
     static func save<T: Codable>(_ value: T, key: String, suiteName: String) {
-        guard let ud = UserDefaults(suiteName: suiteName) else { return }
+        guard let defaults = UserDefaults(suiteName: suiteName) else { return }
         do {
             let data = try JSONEncoder().encode(value)
-            ud.set(data, forKey: key)
-            ud.synchronize()
+            defaults.set(data, forKey: key)
         } catch {
-            // 일부러 조용히 실패(위젯용이라 앱 크래시 방지)
-            // 필요하면 print(error)로 디버깅 가능
+            // ignore
         }
     }
 
-    static func load<T: Codable>(_ type: T.Type, key: String, suiteName: String) -> T? {
-        guard let ud = UserDefaults(suiteName: suiteName) else { return nil }
-        guard let data = ud.data(forKey: key) else { return nil }
+    static func read<T: Codable>(key: String, suiteName: String, as type: T.Type) -> T? {
+        guard let defaults = UserDefaults(suiteName: suiteName) else { return nil }
+        guard let data = defaults.data(forKey: key) else { return nil }
         return try? JSONDecoder().decode(T.self, from: data)
     }
 
+    // ✅ Raw Int 저장(override 같은 단순값용)
+    static func saveRawInt(_ value: Int, key: String, suiteName: String) {
+        guard let defaults = UserDefaults(suiteName: suiteName) else { return }
+        defaults.set(value, forKey: key)
+    }
+
+    // ✅ Raw Int 읽기
+    static func read(key: String, suiteName: String, as type: Int.Type) -> Int? {
+        guard let defaults = UserDefaults(suiteName: suiteName) else { return nil }
+        return defaults.object(forKey: key) as? Int
+    }
+
+    // ✅ Key 삭제
     static func remove(key: String, suiteName: String) {
-        guard let ud = UserDefaults(suiteName: suiteName) else { return }
-        ud.removeObject(forKey: key)
-        ud.synchronize()
+        guard let defaults = UserDefaults(suiteName: suiteName) else { return }
+        defaults.removeObject(forKey: key)
     }
 }
-
