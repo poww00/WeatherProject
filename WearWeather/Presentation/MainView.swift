@@ -8,21 +8,25 @@ struct MainView: View {
     @State private var showDebugPanel: Bool = false
     #endif
 
+    private let sectionSpacing: CGFloat = 16
+
     var body: some View {
         let content = ZStack {
             AppBackgroundView(condition: vm.weather?.condition)
 
             ScrollView(showsIndicators: false) {
-                VStack(spacing: 18) {
+                VStack(spacing: sectionSpacing) {
 
                     Spacer().frame(height: 70)
 
                     OutfitAvatarView(
                         outfit: vm.outfit,
                         temperatureText: vm.weather?.tempString ?? "--°",
-                        summaryText: summaryLine()
+                        summaryText: nil
                     )
-                    .padding(.bottom, 10)
+
+                    outfitSummaryCard(outfitSummaryLine())
+                        .padding(.horizontal)
 
                     sectionCard(title: "Hourly Forecast") {
                         ScrollView(.horizontal, showsIndicators: false) {
@@ -82,15 +86,12 @@ struct MainView: View {
         #endif
     }
 
-    // MARK: - Header
-
     private var header: some View {
         HStack(spacing: 10) {
             Image(systemName: "mappin.and.ellipse")
                 .font(.title2)
                 .foregroundColor(.white)
 
-            // ✅ Release 빌드에서는 디버그 제스처/배지를 아예 노출하지 않음
             #if DEBUG
             Text(vm.locationName)
                 .font(.title3)
@@ -152,21 +153,32 @@ struct MainView: View {
     }
     #endif
 
-    // MARK: - Helpers
-
-    private func summaryLine() -> String? {
-        guard let w = vm.weather else { return nil }
-        return "H \(Int(w.highTemperature))°  L \(Int(w.lowTemperature))° · \(conditionText(w.condition))"
+    private func outfitSummaryLine() -> String {
+        guard let weather = vm.weather else {
+            return "오늘 날씨에 맞는 옷차림을 추천해드릴게요"
+        }
+        return OutfitSummaryBuilder.makeAppSummary(weather: weather, outfit: vm.outfit)
     }
 
-    private func conditionText(_ c: WeatherModel.WeatherCondition) -> String {
-        switch c {
-        case .clear: return "맑음"
-        case .cloudy: return "흐림"
-        case .rain: return "비"
-        case .snow: return "눈"
-        case .storm: return "폭풍"
+    private func outfitSummaryCard(_ summary: String) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: "tshirt.fill")
+                .foregroundColor(.black.opacity(0.72))
+                .frame(width: 20)
+
+            Text(summary)
+                .font(.subheadline.weight(.semibold))
+                .foregroundColor(.black.opacity(0.82))
+                .lineLimit(2)
+                .minimumScaleFactor(0.85)
+
+            Spacer()
         }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .background(Color.white.opacity(0.92))
+        .cornerRadius(18)
+        .shadow(color: Color.black.opacity(0.06), radius: 10, x: 0, y: 6)
     }
 
     private func symbolName(for c: WeatherModel.WeatherCondition) -> String {
@@ -201,8 +213,6 @@ struct MainView: View {
 }
 
 #if DEBUG
-// MARK: - Debug Sheet (DEBUG 빌드에서만 컴파일)
-
 private struct WW_DebugScenarioSheet: View {
     @ObservedObject var vm: MainViewModel
     @Environment(\.dismiss) private var dismiss
@@ -262,8 +272,6 @@ private struct WW_DebugScenarioSheet: View {
     }
 }
 #endif
-
-// MARK: - Local UI Components (프로젝트 의존성 제거용)
 
 private struct WW_HourlyCard: View {
     let hourText: String

@@ -26,8 +26,17 @@ struct WearWeatherWidgetView: View {
 private extension WearWeatherWidgetView {
 
     var temperatureText: String { "\(entry.snapshot.temperature)°" }
-    var highLowText: String { "H \(entry.snapshot.highTemperature)°  L \(entry.snapshot.lowTemperature)°" }
-    var summaryText: String { "\(highLowText) · \(entry.snapshot.condition.shortText)" }
+
+    var summaryText: String {
+        let weather = WeatherModel(
+            temperature: Double(entry.snapshot.temperature),
+            condition: entry.snapshot.condition,
+            highTemperature: Double(entry.snapshot.highTemperature),
+            lowTemperature: Double(entry.snapshot.lowTemperature),
+            aqi: entry.snapshot.aqi
+        )
+        return OutfitSummaryBuilder.makeWidgetSummary(weather: weather, outfit: entry.snapshot.outfit)
+    }
 
     var aqiLineText: String? {
         guard let aqi = entry.snapshot.aqi else { return nil }
@@ -78,7 +87,6 @@ private extension WearWeatherWidgetView {
         .foregroundStyle(.primary)
     }
 
-    // MARK: - systemSmall
     var systemSmallView: some View {
         GeometryReader { geo in
             let size = geo.size
@@ -89,7 +97,7 @@ private extension WearWeatherWidgetView {
 
             let headerFontSize = max(11, minSide * 0.082)
             let tempFontSize = max(22, minSide * 0.275)
-            let summaryFontSize = max(10, minSide * 0.070)
+            let summaryFontSize = max(10, minSide * 0.068)
 
             let hasAQI = (entry.snapshot.aqi != nil)
             let avatarHeight = max(62, size.height * (hasAQI ? 0.50 : 0.54))
@@ -123,7 +131,7 @@ private extension WearWeatherWidgetView {
                         .font(.system(size: summaryFontSize, weight: .semibold))
                         .opacity(0.86)
                         .lineLimit(1)
-                        .minimumScaleFactor(0.65)
+                        .minimumScaleFactor(0.78)
 
                     if let aqiLineText {
                         badge(text: aqiLineText, compactText: "AQI")
@@ -137,7 +145,6 @@ private extension WearWeatherWidgetView {
         .containerBackground(.fill.tertiary, for: .widget)
     }
 
-    // MARK: - systemMedium
     var systemMediumView: some View {
         HStack(spacing: 12) {
             OutfitAvatarWidgetView(outfit: entry.snapshot.outfit, style: .standard)
@@ -164,7 +171,7 @@ private extension WearWeatherWidgetView {
                     .font(.caption)
                     .opacity(0.86)
                     .lineLimit(1)
-                    .minimumScaleFactor(0.78)
+                    .minimumScaleFactor(0.8)
 
                 HStack(spacing: 6) {
                     if let aqiLineText { badge(text: aqiLineText, compactText: "AQI") }
@@ -180,7 +187,6 @@ private extension WearWeatherWidgetView {
         .containerBackground(.fill.tertiary, for: .widget)
     }
 
-    // MARK: - accessoryRectangular
     var accessoryRectangularView: some View {
         HStack(spacing: 10) {
             OutfitAvatarWidgetView(outfit: entry.snapshot.outfit, style: .standard)
@@ -206,7 +212,7 @@ private extension WearWeatherWidgetView {
                         .font(.caption2)
                         .opacity(0.85)
                         .lineLimit(1)
-                        .minimumScaleFactor(0.65)
+                        .minimumScaleFactor(0.72)
                         .layoutPriority(1)
 
                     Spacer(minLength: 6)
@@ -226,13 +232,11 @@ private extension WearWeatherWidgetView {
         .containerBackground(.fill.tertiary, for: .widget)
     }
 
-    // MARK: - accessoryCircular (✅ 한 번에 고정 완료 버전)
     var accessoryCircularView: some View {
         GeometryReader { geo in
             let minSide = min(geo.size.width, geo.size.height)
 
             ZStack(alignment: .bottom) {
-                // ✅ 원형은 "절대 잘림 방지"를 위해 크기를 직접 제어
                 OutfitAvatarWidgetView(outfit: entry.snapshot.outfit, style: .circular)
                     .frame(width: minSide * 0.92, height: minSide * 0.92)
                     .position(x: geo.size.width / 2, y: geo.size.height * 0.48)
@@ -247,9 +251,9 @@ private extension WearWeatherWidgetView {
         .containerBackground(.fill.tertiary, for: .widget)
     }
 
-    // MARK: - accessoryInline
     var accessoryInlineView: some View {
-        Text("\(entry.snapshot.locationName) \(temperatureText) \(entry.snapshot.condition.emoji)")
+        Text("\(entry.snapshot.locationName) \(temperatureText) · \(summaryText)")
+            .lineLimit(1)
     }
 }
 

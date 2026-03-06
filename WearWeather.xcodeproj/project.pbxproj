@@ -79,6 +79,7 @@
 				Shared/Models/ClothingModel.swift,
 				Shared/Models/DailyForecastItem.swift,
 				Shared/Models/HourlyForecastItem.swift,
+				Shared/Models/OutfitSummaryBuilder.swift,
 				Shared/Models/WeatherModel.swift,
 				Shared/Models/WidgetSnapshot.swift,
 				Shared/Storage/AppGroupStore.swift,
